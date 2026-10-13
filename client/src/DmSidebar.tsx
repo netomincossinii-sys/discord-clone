@@ -1,4 +1,5 @@
 import type { DmConversation } from './api'
+import { UserHoverCard } from './UserHoverCard'
 
 export function DmSidebar({
   conversations,
@@ -28,7 +29,9 @@ export function DmSidebar({
               </div>
             )}
             <div className="dm-conversation-text">
-              <div className="dm-conversation-name">{c.user.username}</div>
+              <UserHoverCard userId={c.user.id} className="dm-conversation-name">
+                {c.user.username}
+              </UserHoverCard>
               {c.lastMessage && <div className="dm-conversation-preview">{c.lastMessage.content}</div>}
             </div>
           </button>

@@ -1617,6 +1617,17 @@ body {
   margin: -36px 0 0 20px;
   width: 72px;
   height: 72px;
+  position: relative;
+}
+
+.profile-avatar-status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid var(--color-bg-800);
 }
 
 .profile-avatar-img,
@@ -1668,6 +1679,12 @@ body {
   font-weight: 700;
   color: #fff;
   margin-top: 8px;
+}
+
+.profile-status-label {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin-top: 2px;
 }
 
 .profile-bio {
@@ -1744,6 +1761,148 @@ body {
 
 .profile-edit-btn:hover {
   background: var(--color-accent-hover);
+}
+
+.profile-action-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-bg-600);
+}
+
+.profile-action-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.profile-action-btn:hover {
+  color: #fff;
+  background: var(--color-bg-600);
+}
+
+.user-hover-card {
+  position: fixed;
+  z-index: 1000;
+  background: var(--color-bg-800);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.user-hover-banner {
+  height: 40px;
+}
+
+.user-hover-avatar-wrap {
+  position: relative;
+  margin: -24px 0 0 14px;
+  width: 48px;
+  height: 48px;
+}
+
+.user-hover-avatar-img,
+.user-hover-avatar-fallback {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--color-bg-800);
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.user-hover-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg-800);
+}
+
+.user-hover-body {
+  padding: 8px 14px 14px;
+}
+
+.user-hover-username-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.user-hover-username {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.user-hover-crown {
+  color: #f0b232;
+}
+
+.user-hover-status-label {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-top: 1px;
+}
+
+.user-hover-activity {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-bg-600);
+}
+
+.user-hover-activity-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  margin-bottom: 2px;
+}
+
+.user-hover-activity-text {
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.user-hover-bio {
+  color: var(--color-text);
+  font-size: 13px;
+  margin-top: 10px;
+  white-space: pre-wrap;
+}
+
+.user-hover-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.user-hover-tag {
+  background: var(--color-bg-600);
+  color: var(--color-text);
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 10px;
 }
 
 .edit-profile-body {

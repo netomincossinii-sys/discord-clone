@@ -2,6 +2,7 @@ import { useState } from 'react'
 import * as api from './api'
 import type { FriendUser, PendingRequest } from './api'
 import { MessageCircleIcon, CheckIcon, XIcon } from './Icon'
+import { UserHoverCard } from './UserHoverCard'
 
 function FriendRow({
   user,
@@ -25,7 +26,9 @@ function FriendRow({
           </div>
         )}
         <div>
-          <div className="friend-username">{user.username}</div>
+          <UserHoverCard userId={user.id} className="friend-username">
+            {user.username}
+          </UserHoverCard>
           <div className="friend-status">{user.online ? 'Online' : 'Offline'}</div>
         </div>
       </button>

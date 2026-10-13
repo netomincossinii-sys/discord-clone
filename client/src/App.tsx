@@ -11,10 +11,11 @@ import { ProfileCard } from './ProfileCard'
 import { EditProfileModal } from './EditProfileModal'
 import { StatusMenu } from './StatusMenu'
 import { VoiceDeviceMenu } from './VoiceDeviceMenu'
-import { SettingsModal } from './SettingsModal'
+import { SettingsModal, type Section as SettingsSection } from './SettingsModal'
 import { FriendsView } from './FriendsView'
 import { HomeView } from './HomeView'
 import { LogoIcon } from './LogoIcon'
+import { UserHoverCard } from './UserHoverCard'
 import { DmSidebar } from './DmSidebar'
 import { DmChatPanel } from './DmChatPanel'
 import { DmCallRingModal } from './DmCallRingModal'
@@ -55,7 +56,13 @@ function App() {
   const [showMicMenu, setShowMicMenu] = useState(false)
   const [showSpeakerMenu, setShowSpeakerMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [settingsSection, setSettingsSection] = useState<SettingsSection | undefined>(undefined)
   const [railMode, setRailMode] = useState<RailMode>('home')
+
+  function openSettings(section?: SettingsSection) {
+    setSettingsSection(section)
+    setShowSettings(true)
+  }
   const [friends, setFriends] = useState<FriendUser[]>([])
   const [pendingIncoming, setPendingIncoming] = useState<PendingRequest[]>([])
   const [pendingOutgoing, setPendingOutgoing] = useState<PendingRequest[]>([])
@@ -290,7 +297,9 @@ function App() {
                   {member.username.slice(0, 1).toUpperCase()}
                 </div>
               )}
-              <span className="voice-channel-member-name">{member.username}</span>
+              <UserHoverCard userId={member.id} isOwner={activeServer?.ownerId === member.id} className="voice-channel-member-name">
+                {member.username}
+              </UserHoverCard>
             </div>
           ))}
       </div>
@@ -727,7 +736,7 @@ function App() {
             onToggleScreenShare={voice.toggleScreenShare}
             onSelectMicDevice={voice.selectMicDevice}
             onSelectCameraDevice={voice.selectCameraDevice}
-            onOpenSettings={() => setShowSettings(true)}
+            onOpenSettings={() => openSettings()}
             onLeave={voice.leave}
           />
         </div>
@@ -767,7 +776,7 @@ function App() {
           onToggleScreenShare={voice.toggleScreenShare}
           onSelectMicDevice={voice.selectMicDevice}
           onSelectCameraDevice={voice.selectCameraDevice}
-          onOpenSettings={() => setShowSettings(true)}
+          onOpenSettings={() => openSettings()}
           onLeave={voice.leave}
         />
       ) : railMode === 'servers' ? (
@@ -785,9 +794,9 @@ function App() {
                 </button>
                 <div className="message-body">
                   <div className="message-meta">
-                    <span className="message-author" style={{ color: m.authorColor }}>
+                    <UserHoverCard userId={m.authorId} className="message-author" style={{ color: m.authorColor }}>
                       {m.authorName}
-                    </span>
+                    </UserHoverCard>
                     <span className="message-time">
                       {new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -832,7 +841,9 @@ function App() {
                   style={{ background: member.online ? 'var(--color-online)' : 'var(--color-offline)' }}
                 />
               </span>
-              <span className="member-row-name">{member.username}</span>
+              <UserHoverCard userId={member.id} isOwner={activeServer?.ownerId === member.id} className="member-row-name">
+                {member.username}
+              </UserHoverCard>
               {activeServer?.ownerId === member.id && <CrownIcon size={14} className="member-row-crown" />}
               {connectedVoiceUserIds.has(member.id) && <MicIcon size={14} className="member-row-voice-icon" />}
             </button>
@@ -897,7 +908,7 @@ function App() {
                 kind="mic"
                 currentDeviceId={voice.micDeviceId}
                 onSelect={voice.selectMicDevice}
-                onOpenSettings={() => setShowSettings(true)}
+                onOpenSettings={() => openSettings()}
                 onClose={() => setShowMicMenu(false)}
               />
             )}
@@ -919,13 +930,13 @@ function App() {
                 kind="speaker"
                 currentDeviceId={voice.speakerDeviceId}
                 onSelect={voice.selectSpeakerDevice}
-                onOpenSettings={() => setShowSettings(true)}
+                onOpenSettings={() => openSettings()}
                 onClose={() => setShowSpeakerMenu(false)}
               />
             )}
           </div>
 
-          <button className="user-footer-icon-btn" onClick={() => setShowSettings(true)} title="Configurações">
+          <button className="user-footer-icon-btn" onClick={() => openSettings()} title="Configurações">
             <SettingsIcon size={18} />
           </button>
         </div>
@@ -948,6 +959,10 @@ function App() {
           isOwnProfile={profileViewUserId === user.id}
           onClose={() => setProfileViewUserId(null)}
           onEdit={openEditProfile}
+          onOpenSettings={(section) => {
+            setProfileViewUserId(null)
+            openSettings(section)
+          }}
         />
       )}
 
@@ -966,6 +981,7 @@ function App() {
         <SettingsModal
           userId={user.id}
           voice={voice}
+          initialSection={settingsSection}
           onClose={() => setShowSettings(false)}
           onEditProfile={() => {
             setShowSettings(false)

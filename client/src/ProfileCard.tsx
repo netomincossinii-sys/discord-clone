@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import * as api from './api'
 import type { Profile } from './api'
+import { STATUS_META } from './api'
+import type { Section as SettingsSection } from './SettingsModal'
 import { Modal } from './Modal'
+import { RocketIcon, BellIcon, ShieldIcon, GearIcon } from './Icon'
 
 function useElapsed(startedAt: string | null) {
   const [elapsed, setElapsed] = useState('')
@@ -30,11 +33,13 @@ export function ProfileCard({
   isOwnProfile,
   onClose,
   onEdit,
+  onOpenSettings,
 }: {
   userId: string
   isOwnProfile: boolean
   onClose: () => void
   onEdit: () => void
+  onOpenSettings?: (section: SettingsSection) => void
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const elapsed = useElapsed(profile?.activityStartedAt ?? null)
@@ -64,9 +69,11 @@ export function ProfileCard({
                 {profile.username.slice(0, 1).toUpperCase()}
               </div>
             )}
+            <span className="profile-avatar-status-dot" style={{ background: STATUS_META[profile.status].dotColor }} />
           </div>
           <div className="profile-body">
             <div className="profile-username">{profile.username}</div>
+            <div className="profile-status-label">{STATUS_META[profile.status].label}</div>
             {profile.bio && <div className="profile-bio">{profile.bio}</div>}
             {profile.activityText && (
               <div className="profile-activity">
@@ -95,6 +102,26 @@ export function ProfileCard({
               <button className="profile-edit-btn" onClick={onClose}>
                 Fechar
               </button>
+            )}
+            {isOwnProfile && (
+              <div className="profile-action-row">
+                <button className="profile-action-btn" onClick={() => onOpenSettings?.('boost')}>
+                  <RocketIcon size={18} />
+                  <span>Boost</span>
+                </button>
+                <button className="profile-action-btn" onClick={() => onOpenSettings?.('notif')}>
+                  <BellIcon size={18} />
+                  <span>Notificações</span>
+                </button>
+                <button className="profile-action-btn" onClick={() => onOpenSettings?.('privacidade')}>
+                  <ShieldIcon size={18} />
+                  <span>Privacidade</span>
+                </button>
+                <button className="profile-action-btn" onClick={() => onOpenSettings?.('conta')}>
+                  <GearIcon size={18} />
+                  <span>Configurações</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

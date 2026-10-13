@@ -8,7 +8,7 @@ import { SFX } from './sfx'
 import * as prefs from './voicePrefs'
 import type { useVoice } from './useVoice'
 
-type Section = 'conta' | 'boost' | 'voz' | 'aparencia' | 'notif' | 'privacidade'
+export type Section = 'conta' | 'boost' | 'voz' | 'aparencia' | 'notif' | 'privacidade'
 
 const NAV_ITEMS: { key: Section; label: string; icon: string; highlight?: boolean }[] = [
   { key: 'conta', label: 'Minha conta', icon: '👤' },
@@ -364,14 +364,16 @@ export function SettingsModal({
   onClose,
   onEditProfile,
   onLogout,
+  initialSection,
 }: {
   userId: string
   voice: ReturnType<typeof useVoice>
   onClose: () => void
   onEditProfile: () => void
   onLogout: () => void
+  initialSection?: Section
 }) {
-  const [section, setSection] = useState<Section>('conta')
+  const [section, setSection] = useState<Section>(initialSection ?? 'conta')
 
   return (
     <Modal onClose={onClose} width={840}>
