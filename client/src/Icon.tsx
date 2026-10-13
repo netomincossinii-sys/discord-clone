@@ -225,3 +225,12 @@ export function FileIcon(props: IconProps) {
     </Base>
   )
 }
+
+export function CrownIcon(props: IconProps) {
+  return (
+    <Base {...props} fill="currentColor" stroke="none">
+      <path d="M3 8l4 3 5-6 5 6 4-3-2 10H5L3 8Z" />
+      <path d="M5 20h14" stroke="currentColor" strokeWidth={2} fill="none" />
+    </Base>
+  )
+}

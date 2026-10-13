@@ -25,6 +25,7 @@ import { isDesktopNotificationsEnabled } from './voicePrefs'
 import { STATUS_META, API_URL } from './api'
 import type { Profile, UserStatus, FriendUser, PendingRequest, DmConversation, DmMessage } from './api'
 import type { ChatMessage, PresenceUser, ServerInfo, Attachment } from './types'
+import { CrownIcon } from './Icon'
 import { Composer } from './Composer'
 import { MessageAttachment } from './MessageAttachment'
 
@@ -157,6 +158,9 @@ function App() {
     s.on('presence:update', ({ userId, online }: { userId: string; online: boolean }) => {
       setFriends((prev) => prev.map((f) => (f.id === userId ? { ...f, online } : f)))
       setDmConversations((prev) => prev.map((c) => (c.user.id === userId ? { ...c, user: { ...c.user, online } } : c)))
+      setServers((prev) =>
+        prev.map((s) => ({ ...s, members: s.members.map((m) => (m.id === userId ? { ...m, online } : m)) }))
+      )
     })
     s.on('dm:new_message', (message: DmMessage) => {
       setDmMessagesByConversation((prev) => ({
@@ -206,6 +210,22 @@ function App() {
     [activeServer, activeChannelId],
   )
   const activeMessages = activeChannelId ? messagesByChannel[activeChannelId] ?? [] : []
+
+  const connectedVoiceUserIds = useMemo(() => {
+    const ids = new Set<string>()
+    activeServer?.channels
+      .filter((c) => c.type === 'VOICE')
+      .forEach((c) => voice.channelPresence.get(c.id)?.forEach((u) => ids.add(u.id)))
+    return ids
+  }, [activeServer, voice.channelPresence])
+
+  const sortedMembers = useMemo(() => {
+    if (!activeServer) return []
+    return [...activeServer.members].sort((a, b) => {
+      if (a.online !== b.online) return a.online ? -1 : 1
+      return a.username.localeCompare(b.username)
+    })
+  }, [activeServer])
 
   useEffect(() => {
     if (socket && activeChannel?.type === 'TEXT') {
@@ -275,7 +295,8 @@ function App() {
 
   async function handleCreateServer(name: string, icon: string) {
     const { server } = await api.createServer(name, icon)
-    setServers((prev) => [...prev, server])
+    const data = await api.getState()
+    setServers(data.servers)
     selectServer(server)
     setShowAddServer(false)
     socket?.emit('rooms:sync')
@@ -283,7 +304,8 @@ function App() {
 
   async function handleJoinServer(code: string) {
     const { server } = await api.joinServerByInvite(code)
-    setServers((prev) => (prev.some((s) => s.id === server.id) ? prev : [...prev, server]))
+    const data = await api.getState()
+    setServers(data.servers)
     selectServer(server)
     setShowAddServer(false)
     setPendingInviteCode(null)
@@ -658,20 +680,47 @@ function App() {
       {railMode === 'servers' && (
         <aside className="member-list">
           <div className="channel-group-label">
-            {voice.channelId ? `NA CHAMADA — ${voice.participants.size + 1}` : 'MEMBROS'}
+            {voice.channelId ? `NA CHAMADA — ${voice.participants.size + 1}` : `MEMBROS — ${sortedMembers.length}`}
           </div>
-          {voice.channelId && (
-            <button className="member-item" onClick={() => setProfileViewUserId(user.id)}>
-              <span className="user-dot" style={{ background: user.color }} />
-              {user.username} (você)
-            </button>
+          {voice.channelId ? (
+            <>
+              <button className="member-item" onClick={() => setProfileViewUserId(user.id)}>
+                <span className="user-dot" style={{ background: user.color }} />
+                {user.username} (você)
+              </button>
+              {Array.from(voice.participants.values()).map((p) => (
+                <button className="member-item" key={p.user.id} onClick={() => setProfileViewUserId(p.user.id)}>
+                  <span className="user-dot" style={{ background: p.user.color }} />
+                  {p.user.username}
+                </button>
+              ))}
+            </>
+          ) : (
+            sortedMembers.map((member) => (
+              <button
+                className={`member-row ${member.online ? '' : 'offline'}`}
+                key={member.id}
+                onClick={() => setProfileViewUserId(member.id)}
+              >
+                <span className="member-row-avatar-wrap">
+                  {member.avatarImage ? (
+                    <img className="member-row-avatar-img" src={member.avatarImage} alt="" />
+                  ) : (
+                    <div className="member-row-avatar-fallback" style={{ background: member.color }}>
+                      {member.username.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <span
+                    className="member-row-status-dot"
+                    style={{ background: member.online ? 'var(--color-online)' : 'var(--color-offline)' }}
+                  />
+                </span>
+                <span className="member-row-name">{member.username}</span>
+                {activeServer?.ownerId === member.id && <CrownIcon size={14} className="member-row-crown" />}
+                {connectedVoiceUserIds.has(member.id) && <MicIcon size={14} className="member-row-voice-icon" />}
+              </button>
+            ))
           )}
-          {Array.from(voice.participants.values()).map((p) => (
-            <button className="member-item" key={p.user.id} onClick={() => setProfileViewUserId(p.user.id)}>
-              <span className="user-dot" style={{ background: p.user.color }} />
-              {p.user.username}
-            </button>
-          ))}
         </aside>
       )}
 

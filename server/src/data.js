@@ -39,7 +39,10 @@ export function isValidAttachment(attachment) {
 export async function getServersForUser(userId) {
   return prisma.server.findMany({
     where: { memberships: { some: { userId } } },
-    include: { channels: { orderBy: { name: "asc" } } },
+    include: {
+      channels: { orderBy: { name: "asc" } },
+      memberships: { include: { user: { select: { id: true, username: true, color: true, avatarImage: true } } } },
+    },
     orderBy: { name: "asc" },
   });
 }

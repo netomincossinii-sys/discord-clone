@@ -6,12 +6,21 @@ export interface Channel {
   type: ChannelType
 }
 
+export interface ServerMember {
+  id: string
+  username: string
+  color: string
+  avatarImage: string | null
+  online: boolean
+}
+
 export interface ServerInfo {
   id: string
   name: string
   icon: string
   ownerId: string | null
   channels: Channel[]
+  members: ServerMember[]
 }
 
 export interface ServerInvite {
