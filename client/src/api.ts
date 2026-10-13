@@ -19,6 +19,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json()
 }
 
+export function fetchTurnCredentials() {
+  return request<{ iceServers: RTCIceServer[] }>('/api/turn-credentials')
+}
+
 export function register(username: string, password: string) {
   return request<AuthUser>('/api/register', {
     method: 'POST',

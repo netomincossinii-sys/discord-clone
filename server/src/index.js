@@ -11,6 +11,7 @@ import { profileRouter } from "./routes/profile.js";
 import { friendsRouter } from "./routes/friends.js";
 import { dmsRouter } from "./routes/dms.js";
 import { serversRouter } from "./routes/servers.js";
+import { turnRouter } from "./routes/turn.js";
 import { requireAuth, verifyToken, COOKIE_NAME } from "./auth.js";
 import { getServersForUser, getChannelWithAccess, getHistory, addMessage, isValidAttachment } from "./data.js";
 import { registerVoiceHandlers } from "./voice.js";
@@ -29,6 +30,7 @@ app.use("/api", authRouter);
 app.use("/api", profileRouter);
 app.use("/api", dmsRouter);
 app.use("/api", serversRouter);
+app.use("/api", turnRouter);
 
 app.get("/api/state", requireAuth, async (req, res) => {
   const servers = await getServersForUser(req.userId);

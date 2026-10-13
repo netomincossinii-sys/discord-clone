@@ -3,6 +3,7 @@ import type { Socket } from 'socket.io-client'
 import type { PresenceUser } from './types'
 import * as prefs from './voicePrefs'
 import { SFX } from './sfx'
+import { fetchTurnCredentials } from './api'
 
 interface Participant {
   user: PresenceUser
@@ -16,9 +17,7 @@ interface SignalData {
   candidate?: RTCIceCandidateInit
 }
 
-const ICE_SERVERS: RTCConfiguration = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-}
+const FALLBACK_ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }]
 
 export function useVoice(socket: Socket | null, localUser: PresenceUser | null) {
   const [channelId, setChannelId] = useState<string | null>(null)
@@ -38,6 +37,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
   const [error, setError] = useState<string | null>(null)
 
   const pcs = useRef<Map<string, RTCPeerConnection>>(new Map())
+  const iceServersRef = useRef<RTCIceServer[]>(FALLBACK_ICE_SERVERS)
   const localStreamRef = useRef<MediaStream | null>(null)
   const screenStreamRef = useRef<MediaStream | null>(null)
   const peerMainStreamId = useRef<Map<string, string>>(new Map())
@@ -70,7 +70,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
   const createPeerConnection = useCallback((peerId: string, user: PresenceUser) => {
     let pc = pcs.current.get(peerId)
     if (pc) return pc
-    pc = new RTCPeerConnection(ICE_SERVERS)
+    pc = new RTCPeerConnection({ iceServers: iceServersRef.current })
     localStreamRef.current?.getTracks().forEach((track) => {
       pc!.addTrack(track, localStreamRef.current!)
     })
@@ -140,6 +140,10 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     if (channelIdRef.current) leave()
     setError(null)
     try {
+      iceServersRef.current = await fetchTurnCredentials()
+        .then((res) => res.iceServers)
+        .catch(() => FALLBACK_ICE_SERVERS)
+
       const audioConstraint: MediaTrackConstraints = {
         ...(micDeviceId ? { deviceId: { exact: micDeviceId } } : {}),
         noiseSuppression: prefs.getNoiseSuppression(),
