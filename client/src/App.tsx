@@ -249,10 +249,12 @@ function App() {
 
   const categorizedChannels = useMemo(
     () =>
-      activeServer?.categories.map((category) => ({
-        category,
-        channels: activeServer.channels.filter((c) => c.categoryId === category.id),
-      })) ?? [],
+      activeServer?.categories
+        .map((category) => ({
+          category,
+          channels: activeServer.channels.filter((c) => c.categoryId === category.id),
+        }))
+        .filter((group) => group.channels.length > 0) ?? [],
     [activeServer],
   )
   const uncategorizedChannels = useMemo(
