@@ -334,7 +334,7 @@ function App() {
     return (
       <div key={channel.id}>
         <div className="channel-item-row">
-          <button className={`channel-item ${isActive ? 'active' : ''}`} onClick={() => selectChannel(channel.id)}>
+          <button className={`channel-item ${isActive ? 'active' : ''}`} onClick={() => selectChannel(channel.id, channel.type)}>
             {isVoice ? '🔊' : '#'} {channel.name}
             {channel.locked && <LockIcon size={12} className="channel-lock-icon" />}
           </button>
@@ -391,8 +391,9 @@ function App() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [activeChannelId, messagesByChannel])
 
-  function selectChannel(channelId: string) {
+  function selectChannel(channelId: string, type: 'TEXT' | 'VOICE') {
     setActiveChannelId(channelId)
+    if (type === 'VOICE') voice.join(channelId)
   }
 
   function jumpToVoiceChannel() {
