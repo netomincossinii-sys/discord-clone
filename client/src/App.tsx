@@ -277,6 +277,7 @@ function App() {
     setServers((prev) => [...prev, server])
     selectServer(server)
     setShowAddServer(false)
+    socket?.emit('rooms:sync')
   }
 
   async function handleJoinServer(code: string) {
@@ -285,6 +286,7 @@ function App() {
     selectServer(server)
     setShowAddServer(false)
     setPendingInviteCode(null)
+    socket?.emit('rooms:sync')
   }
 
   async function handleLeaveOrDeleteServer(server: ServerInfo) {
@@ -499,13 +501,26 @@ function App() {
         {activeServer?.channels
           .filter((c) => c.type === 'VOICE')
           .map((channel) => (
-            <button
-              key={channel.id}
-              className={`channel-item ${channel.id === voice.channelId ? 'active' : ''}`}
-              onClick={() => selectChannel(channel.id, 'VOICE')}
-            >
-              🔊 {channel.name}
-            </button>
+            <div key={channel.id}>
+              <button
+                className={`channel-item ${channel.id === voice.channelId ? 'active' : ''}`}
+                onClick={() => selectChannel(channel.id, 'VOICE')}
+              >
+                🔊 {channel.name}
+              </button>
+              {(voice.channelPresence.get(channel.id) ?? []).map((member) => (
+                <div key={member.id} className="voice-channel-member">
+                  {member.avatarImage ? (
+                    <img className="voice-channel-member-avatar-img" src={member.avatarImage} alt="" />
+                  ) : (
+                    <div className="voice-channel-member-avatar-fallback" style={{ background: member.color }}>
+                      {member.username.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="voice-channel-member-name">{member.username}</span>
+                </div>
+              ))}
+            </div>
           ))}
       </aside>
       )}

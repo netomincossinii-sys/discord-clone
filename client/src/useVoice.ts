@@ -23,6 +23,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
   const [channelId, setChannelId] = useState<string | null>(null)
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [participants, setParticipants] = useState<Map<string, Participant>>(new Map())
+  const [channelPresence, setChannelPresence] = useState<Map<string, PresenceUser[]>>(new Map())
   const [micOn, setMicOn] = useState(!prefs.getDefaultMicMuted())
   const [camOn, setCamOn] = useState(false)
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
@@ -418,15 +419,27 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       })
     }
 
+    const handleSnapshot = (channels: { channelId: string; users: PresenceUser[] }[]) => {
+      setChannelPresence(new Map(channels.map((c) => [c.channelId, c.users])))
+    }
+
+    const handleChannelUpdate = ({ channelId, users }: { channelId: string; users: PresenceUser[] }) => {
+      setChannelPresence((prev) => new Map(prev).set(channelId, users))
+    }
+
     socket.on('voice:peers', handlePeers)
     socket.on('voice:peer-joined', handlePeerJoined)
     socket.on('voice:signal', handleSignal)
     socket.on('voice:peer-left', handlePeerLeft)
+    socket.on('voice:snapshot', handleSnapshot)
+    socket.on('voice:channel-update', handleChannelUpdate)
     return () => {
       socket.off('voice:peers', handlePeers)
       socket.off('voice:peer-joined', handlePeerJoined)
       socket.off('voice:signal', handleSignal)
       socket.off('voice:peer-left', handlePeerLeft)
+      socket.off('voice:snapshot', handleSnapshot)
+      socket.off('voice:channel-update', handleChannelUpdate)
     }
   }, [socket, localUser, createPeerConnection, renegotiate])
 
@@ -436,6 +449,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     channelId,
     localStream,
     participants,
+    channelPresence,
     micOn,
     camOn,
     screenStream,

@@ -14,7 +14,7 @@ import { serversRouter } from "./routes/servers.js";
 import { turnRouter } from "./routes/turn.js";
 import { requireAuth, verifyToken, COOKIE_NAME } from "./auth.js";
 import { getServersForUser, getChannelWithAccess, getHistory, addMessage, isValidAttachment } from "./data.js";
-import { registerVoiceHandlers } from "./voice.js";
+import { registerVoiceHandlers, getChannelPresence } from "./voice.js";
 import { registerDmHandlers } from "./dmSocket.js";
 import { addSocket, removeSocket, isOnline, emitToUser } from "./presence.js";
 
@@ -55,6 +55,15 @@ io.use((socket, next) => {
   next();
 });
 
+async function joinServerRooms(socket, servers) {
+  servers.forEach((s) => socket.join(`server:${s.id}`));
+  const voiceChannels = servers.flatMap((s) => s.channels.filter((c) => c.type === "VOICE"));
+  socket.emit(
+    "voice:snapshot",
+    voiceChannels.map((c) => ({ channelId: c.id, users: getChannelPresence(c.id) }))
+  );
+}
+
 async function notifyFriendsPresence(userId, online) {
   const friendships = await prisma.friendship.findMany({
     where: { status: "ACCEPTED", OR: [{ requesterId: userId }, { addresseeId: userId }] },
@@ -81,6 +90,11 @@ io.on("connection", async (socket) => {
 
   registerVoiceHandlers(io, socket, dbUser);
   registerDmHandlers(io, socket, dbUser);
+
+  await joinServerRooms(socket, await getServersForUser(dbUser.id));
+  socket.on("rooms:sync", async () => {
+    await joinServerRooms(socket, await getServersForUser(dbUser.id));
+  });
 
   socket.on("join_channel", async (channelId) => {
     const channel = await getChannelWithAccess(channelId, socket.data.userId);
