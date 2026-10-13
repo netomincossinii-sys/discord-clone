@@ -18,12 +18,16 @@ interface SignalData {
 }
 
 const FALLBACK_ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }]
+const SPEAKING_THRESHOLD = 0.02
+const SPEAKING_HOLD_MS = 300
+const LOCAL_SPEAKING_KEY = 'local'
 
 export function useVoice(socket: Socket | null, localUser: PresenceUser | null) {
   const [channelId, setChannelId] = useState<string | null>(null)
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [participants, setParticipants] = useState<Map<string, Participant>>(new Map())
   const [channelPresence, setChannelPresence] = useState<Map<string, PresenceUser[]>>(new Map())
+  const [speakingPeers, setSpeakingPeers] = useState<Set<string>>(new Set())
   const [micOn, setMicOn] = useState(!prefs.getDefaultMicMuted())
   const [camOn, setCamOn] = useState(false)
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
@@ -51,6 +55,72 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
   useEffect(() => {
     participantsSnapshot.current = participants
   }, [participants])
+
+  const analyserCtxRef = useRef<AudioContext | null>(null)
+  const analysersRef = useRef<Map<string, { analyser: AnalyserNode; data: Uint8Array<ArrayBuffer>; source: MediaStreamAudioSourceNode }>>(new Map())
+  const lastSpeakingAtRef = useRef<Map<string, number>>(new Map())
+  const speakingIntervalRef = useRef<number | null>(null)
+
+  const stopSpeakingLoop = () => {
+    if (speakingIntervalRef.current !== null) {
+      window.clearInterval(speakingIntervalRef.current)
+      speakingIntervalRef.current = null
+    }
+  }
+
+  const startSpeakingLoop = () => {
+    if (speakingIntervalRef.current !== null) return
+    speakingIntervalRef.current = window.setInterval(() => {
+      const now = performance.now()
+      const next = new Set<string>()
+      analysersRef.current.forEach(({ analyser, data }, key) => {
+        analyser.getByteTimeDomainData(data)
+        let sumSquares = 0
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128
+          sumSquares += v * v
+        }
+        const rms = Math.sqrt(sumSquares / data.length)
+        if (rms > SPEAKING_THRESHOLD) lastSpeakingAtRef.current.set(key, now)
+        if (now - (lastSpeakingAtRef.current.get(key) ?? 0) < SPEAKING_HOLD_MS) next.add(key)
+      })
+      setSpeakingPeers((prev) => {
+        if (prev.size === next.size && Array.from(prev).every((k) => next.has(k))) return prev
+        return next
+      })
+    }, 100)
+  }
+
+  const detachAnalyser = (key: string) => {
+    const entry = analysersRef.current.get(key)
+    if (!entry) return
+    entry.source.disconnect()
+    entry.analyser.disconnect()
+    analysersRef.current.delete(key)
+    lastSpeakingAtRef.current.delete(key)
+  }
+
+  const attachAnalyser = (key: string, stream: MediaStream) => {
+    if (stream.getAudioTracks().length === 0) return
+    if (!analyserCtxRef.current) analyserCtxRef.current = new AudioContext()
+    const ctx = analyserCtxRef.current
+    detachAnalyser(key)
+    const source = ctx.createMediaStreamSource(stream)
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 512
+    source.connect(analyser)
+    const data = new Uint8Array(new ArrayBuffer(analyser.frequencyBinCount))
+    analysersRef.current.set(key, { analyser, data, source })
+    startSpeakingLoop()
+  }
+
+  const stopAllAnalysers = () => {
+    stopSpeakingLoop()
+    Array.from(analysersRef.current.keys()).forEach(detachAnalyser)
+    analyserCtxRef.current?.close().catch(() => {})
+    analyserCtxRef.current = null
+    setSpeakingPeers(new Set())
+  }
 
   const bumpLocalStream = () => {
     const current = localStreamRef.current
@@ -92,8 +162,10 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
         if (!mainStreamId) {
           peerMainStreamId.current.set(peerId, incomingStream.id)
           next.set(peerId, { ...existing, stream: incomingStream })
+          attachAnalyser(peerId, incomingStream)
         } else if (incomingStream.id === mainStreamId) {
           next.set(peerId, { ...existing, stream: incomingStream })
+          attachAnalyser(peerId, incomingStream)
         } else {
           next.set(peerId, { ...existing, screenStream: incomingStream })
         }
@@ -133,6 +205,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     setCamOn(false)
     channelIdRef.current = null
     setChannelId(null)
+    stopAllAnalysers()
     SFX.voiceLeave()
   }, [socket])
 
@@ -167,6 +240,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
 
       localStreamRef.current = dest.stream
       setLocalStream(dest.stream)
+      attachAnalyser(LOCAL_SPEAKING_KEY, dest.stream)
       channelIdRef.current = newChannelId
       setChannelId(newChannelId)
       socket?.emit('voice:join', newChannelId)
@@ -412,6 +486,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       pcs.current.get(peerId)?.close()
       pcs.current.delete(peerId)
       peerMainStreamId.current.delete(peerId)
+      detachAnalyser(peerId)
       setParticipants((prev) => {
         const next = new Map(prev)
         next.delete(peerId)
@@ -450,6 +525,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     localStream,
     participants,
     channelPresence,
+    speakingPeers,
     micOn,
     camOn,
     screenStream,

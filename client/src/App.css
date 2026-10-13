@@ -1174,6 +1174,12 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  box-shadow: 0 0 0 3px transparent;
+  transition: box-shadow 0.1s ease;
+}
+
+.voice-tile.speaking {
+  box-shadow: 0 0 0 3px #23a55a, 0 0 18px 2px rgba(35, 165, 90, 0.55);
 }
 
 .voice-tile video {

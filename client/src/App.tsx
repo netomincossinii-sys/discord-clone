@@ -563,6 +563,7 @@ function App() {
             screenStream={voice.screenStream}
             isSharingScreen={voice.isSharingScreen}
             participants={voice.participants}
+            speakingPeers={voice.speakingPeers}
             error={voice.error}
             onToggleMic={voice.toggleMic}
             onToggleCam={voice.toggleCam}
@@ -602,6 +603,7 @@ function App() {
           screenStream={voice.screenStream}
           isSharingScreen={voice.isSharingScreen}
           participants={voice.participants}
+          speakingPeers={voice.speakingPeers}
           error={voice.error}
           onToggleMic={voice.toggleMic}
           onToggleCam={voice.toggleCam}

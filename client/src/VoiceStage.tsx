@@ -26,12 +26,14 @@ function RemoteTile({
   stream,
   deafened,
   speakerDeviceId,
+  speaking,
 }: {
   peerId: string
   user: PresenceUser
   stream?: MediaStream
   deafened: boolean
   speakerDeviceId: string | null
+  speaking: boolean
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -51,7 +53,11 @@ function RemoteTile({
   const hasVideo = (stream?.getVideoTracks().length ?? 0) > 0
 
   return (
-    <div className="voice-tile" style={hasVideo ? undefined : bannerStyle(user.color)} key={peerId}>
+    <div
+      className={`voice-tile ${speaking ? 'speaking' : ''}`}
+      style={hasVideo ? undefined : bannerStyle(user.color)}
+      key={peerId}
+    >
       <video ref={videoRef} autoPlay playsInline muted={deafened} className={hasVideo ? 'visible' : 'hidden'} />
       {!hasVideo &&
         (user.avatarImage ? (
@@ -96,6 +102,7 @@ export function VoiceStage({
   screenStream,
   isSharingScreen,
   participants,
+  speakingPeers,
   error,
   onToggleMic,
   onToggleCam,
@@ -118,6 +125,7 @@ export function VoiceStage({
   screenStream: MediaStream | null
   isSharingScreen: boolean
   participants: Map<string, { user: PresenceUser; stream?: MediaStream; screenStream?: MediaStream }>
+  speakingPeers: Set<string>
   error: string | null
   onToggleMic: () => void
   onToggleCam: () => void
@@ -143,7 +151,10 @@ export function VoiceStage({
       <header className="chat-header">🔊 {channelName}</header>
       {error && <div className="voice-error">{error}</div>}
       <div className="voice-grid">
-        <div className="voice-tile" style={camOn ? undefined : bannerStyle(localUser.color)}>
+        <div
+          className={`voice-tile ${speakingPeers.has('local') ? 'speaking' : ''}`}
+          style={camOn ? undefined : bannerStyle(localUser.color)}
+        >
           <video ref={localVideoRef} autoPlay playsInline muted className={camOn ? 'visible' : 'hidden'} />
           {!camOn &&
             (localUser.avatarImage ? (
@@ -156,7 +167,15 @@ export function VoiceStage({
           <div className="voice-tile-label">{localUser.username} (você)</div>
         </div>
         {Array.from(participants.entries()).map(([peerId, p]) => (
-          <RemoteTile key={peerId} peerId={peerId} user={p.user} stream={p.stream} deafened={deafened} speakerDeviceId={speakerDeviceId} />
+          <RemoteTile
+            key={peerId}
+            peerId={peerId}
+            user={p.user}
+            stream={p.stream}
+            deafened={deafened}
+            speakerDeviceId={speakerDeviceId}
+            speaking={speakingPeers.has(peerId)}
+          />
         ))}
         {screenStream && <ScreenTile label="Sua tela" stream={screenStream} muted />}
         {Array.from(participants.entries())
