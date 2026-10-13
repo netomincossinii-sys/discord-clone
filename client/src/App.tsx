@@ -330,11 +330,11 @@ function App() {
 
   function renderChannelRow(channel: Channel) {
     const isVoice = channel.type === 'VOICE'
-    const isActive = (isVoice ? voice.channelId : activeChannelId) === channel.id
+    const isActive = activeChannelId === channel.id
     return (
       <div key={channel.id}>
         <div className="channel-item-row">
-          <button className={`channel-item ${isActive ? 'active' : ''}`} onClick={() => selectChannel(channel.id, channel.type)}>
+          <button className={`channel-item ${isActive ? 'active' : ''}`} onClick={() => selectChannel(channel.id)}>
             {isVoice ? '🔊' : '#'} {channel.name}
             {channel.locked && <LockIcon size={12} className="channel-lock-icon" />}
           </button>
@@ -387,28 +387,12 @@ function App() {
     }
   }, [socket, activeChannel])
 
-  const prevVoiceChannelIdRef = useRef<string | null>(null)
-  useEffect(() => {
-    const wasConnectedToActiveChannel = prevVoiceChannelIdRef.current === activeChannelId
-    prevVoiceChannelIdRef.current = voice.channelId
-    if (!wasConnectedToActiveChannel || voice.channelId === activeChannelId) return
-    if (railMode !== 'servers' || activeChannel?.type !== 'VOICE') return
-    const firstText = activeServer?.channels.find((c) => c.type === 'TEXT')
-    if (firstText) setActiveChannelId(firstText.id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voice.channelId])
-
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [activeChannelId, messagesByChannel])
 
-  function selectChannel(channelId: string, type: 'TEXT' | 'VOICE') {
+  function selectChannel(channelId: string) {
     setActiveChannelId(channelId)
-    if (type === 'VOICE') {
-      voice.join(channelId)
-    } else if (voice.channelId) {
-      voice.leave()
-    }
   }
 
   function jumpToVoiceChannel() {
@@ -904,6 +888,16 @@ function App() {
           onOpenSettings={() => openSettings()}
           onLeave={voice.leave}
         />
+      ) : railMode === 'servers' && activeChannel?.type === 'VOICE' ? (
+        <main className="voice-join-prompt">
+          <div className="voice-join-prompt-title">
+            🔊 <span>{activeChannel.name}</span>
+          </div>
+          <p className="voice-join-prompt-hint">Você ainda não entrou nesse canal de voz.</p>
+          <button className="voice-join-prompt-btn" onClick={() => voice.join(activeChannel.id)}>
+            Entrar no canal de voz
+          </button>
+        </main>
       ) : railMode === 'servers' ? (
         <main className="chat-area">
           <header className="chat-header"># {activeChannel?.name ?? ''}</header>
