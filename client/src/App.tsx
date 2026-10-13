@@ -28,7 +28,7 @@ import { CreateCategoryModal } from './CreateCategoryModal'
 import { ChannelSettingsModal } from './ChannelSettingsModal'
 import { RolesModal } from './RolesModal'
 import { SFX } from './sfx'
-import { UsersIcon, MessageCircleIcon, PlusIcon, MicIcon, MicOffIcon, HeadphonesIcon, HeadphonesOffIcon, ChevronDownIcon, SettingsIcon, GearIcon, LockIcon } from './Icon'
+import { UsersIcon, MessageCircleIcon, PlusIcon, MicIcon, MicOffIcon, HeadphonesIcon, HeadphonesOffIcon, ChevronDownIcon, SettingsIcon, GearIcon, LockIcon, ScreenShareIcon } from './Icon'
 import { isDesktopNotificationsEnabled } from './voicePrefs'
 import { STATUS_META, API_URL } from './api'
 import type { Profile, UserStatus, FriendUser, PendingRequest, DmConversation, DmMessage } from './api'
@@ -357,6 +357,24 @@ function App() {
               <UserHoverCard userId={member.id} isOwner={activeServer?.ownerId === member.id} className="voice-channel-member-name">
                 {member.username}
               </UserHoverCard>
+              <span className="voice-channel-member-status-icons">
+                {member.sharingScreen && (
+                  <span title="Compartilhando tela">
+                    <ScreenShareIcon size={12} />
+                  </span>
+                )}
+                {member.deafened ? (
+                  <span title="Ensurdecido">
+                    <HeadphonesOffIcon size={12} />
+                  </span>
+                ) : (
+                  member.micOn === false && (
+                    <span title="Microfone mutado">
+                      <MicOffIcon size={12} />
+                    </span>
+                  )
+                )}
+              </span>
             </div>
           ))}
       </div>
@@ -701,18 +719,28 @@ function App() {
           </button>
         </div>
         <div className="rail-divider" />
-        {servers.map((server) => (
-          <div className="server-pill-wrap" key={server.id}>
-            <span className="server-pill-indicator" />
-            <button
-              className={`server-pill ${railMode === 'servers' && server.id === activeServerId ? 'active' : ''}`}
-              title={server.name}
-              onClick={() => selectServer(server)}
-            >
-              {server.iconImage ? <img className="server-pill-img" src={server.iconImage} alt="" /> : server.icon}
-            </button>
-          </div>
-        ))}
+        {servers.map((server) => {
+          const hasVoiceActivity = server.channels.some(
+            (c) => c.type === 'VOICE' && (voice.channelPresence.get(c.id)?.length ?? 0) > 0,
+          )
+          return (
+            <div className="server-pill-wrap" key={server.id}>
+              <span className="server-pill-indicator" />
+              <button
+                className={`server-pill ${railMode === 'servers' && server.id === activeServerId ? 'active' : ''}`}
+                title={server.name}
+                onClick={() => selectServer(server)}
+              >
+                {server.iconImage ? <img className="server-pill-img" src={server.iconImage} alt="" /> : server.icon}
+              </button>
+              {hasVoiceActivity && (
+                <span className="server-pill-voice-badge" title="Alguém está em uma chamada">
+                  <HeadphonesIcon size={11} />
+                </span>
+              )}
+            </div>
+          )
+        })}
         <div className="server-pill-wrap">
           <button className="server-pill add-server-pill" title="Adicionar servidor" onClick={() => setShowAddServer(true)}>
             <PlusIcon size={22} />

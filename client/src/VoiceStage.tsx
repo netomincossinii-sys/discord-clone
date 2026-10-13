@@ -20,6 +20,12 @@ function bannerStyle(color: string): React.CSSProperties {
   return { background: `linear-gradient(160deg, ${color}66 0%, ${color}22 45%, var(--color-bg-900) 85%)` }
 }
 
+function TileStatusIcons({ micOn, deafened }: { micOn?: boolean; deafened?: boolean }) {
+  if (deafened) return <HeadphonesOffIcon size={13} />
+  if (micOn === false) return <MicOffIcon size={13} />
+  return null
+}
+
 function RemoteTile({
   peerId,
   user,
@@ -67,7 +73,10 @@ function RemoteTile({
             {user.username.slice(0, 1).toUpperCase()}
           </div>
         ))}
-      <div className="voice-tile-label">{user.username}</div>
+      <div className="voice-tile-label">
+        {user.username}
+        <TileStatusIcons micOn={user.micOn} deafened={user.deafened} />
+      </div>
     </div>
   )
 }
@@ -82,6 +91,9 @@ function ScreenTile({ label, stream, muted }: { label: string; stream: MediaStre
   return (
     <div className="voice-tile screen-tile">
       <video ref={videoRef} autoPlay playsInline muted={muted} className="visible" />
+      <div className="live-badge">
+        <span className="live-badge-dot" /> AO VIVO
+      </div>
       <div className="voice-tile-label">
         <ScreenShareIcon size={13} /> {label}
       </div>
@@ -164,7 +176,10 @@ export function VoiceStage({
                 {localUser.username.slice(0, 1).toUpperCase()}
               </div>
             ))}
-          <div className="voice-tile-label">{localUser.username} (você)</div>
+          <div className="voice-tile-label">
+            {localUser.username} (você)
+            <TileStatusIcons micOn={micOn} deafened={deafened} />
+          </div>
         </div>
         {Array.from(participants.entries()).map(([peerId, p]) => (
           <RemoteTile

@@ -185,6 +185,22 @@ body {
   color: #fff;
 }
 
+.server-pill-voice-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-online);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--color-bg-900);
+  pointer-events: none;
+}
+
 .channel-list {
   background: var(--color-bg-800);
   display: flex;
@@ -309,6 +325,14 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.voice-channel-member-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
 .user-footer {
@@ -1328,9 +1352,31 @@ body {
 }
 
 .screen-tile {
-  aspect-ratio: 16 / 9;
   background: #000;
   border: 1px solid var(--color-bg-600);
+}
+
+.live-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.live-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
 }
 
 .screen-tile video {

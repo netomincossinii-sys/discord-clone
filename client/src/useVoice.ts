@@ -494,17 +494,34 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       })
     }
 
+    const handlePeerState = ({ peerId, state }: { peerId: string; state: Partial<PresenceUser> }) => {
+      setParticipants((prev) => {
+        const existing = prev.get(peerId)
+        if (!existing) return prev
+        const next = new Map(prev)
+        next.set(peerId, { ...existing, user: { ...existing.user, ...state } })
+        return next
+      })
+    }
+
     socket.on('voice:peers', handlePeers)
     socket.on('voice:peer-joined', handlePeerJoined)
     socket.on('voice:signal', handleSignal)
     socket.on('voice:peer-left', handlePeerLeft)
+    socket.on('voice:peer-state', handlePeerState)
     return () => {
       socket.off('voice:peers', handlePeers)
       socket.off('voice:peer-joined', handlePeerJoined)
       socket.off('voice:signal', handleSignal)
       socket.off('voice:peer-left', handlePeerLeft)
+      socket.off('voice:peer-state', handlePeerState)
     }
   }, [socket, localUser, createPeerConnection, renegotiate])
+
+  useEffect(() => {
+    if (!socket || !channelId) return
+    socket.emit('voice:state', { micOn, deafened, sharingScreen: isSharingScreen })
+  }, [socket, channelId, micOn, deafened, isSharingScreen])
 
   useEffect(() => {
     if (!socket) return

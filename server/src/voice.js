@@ -40,7 +40,8 @@ export function registerVoiceHandlers(io, socket, user) {
     if (!channel) return;
 
     const existingPeers = presenceList(channelId);
-    room(channelId).set(socket.id, user);
+    const presenceUser = { ...user, micOn: true, deafened: false, sharingScreen: false };
+    room(channelId).set(socket.id, presenceUser);
     socket.join(`voice:${channelId}`);
     socket.data.voiceChannelId = channelId;
     socket.data.voiceServerId = channel.serverId;
@@ -49,7 +50,7 @@ export function registerVoiceHandlers(io, socket, user) {
     socket.to(`voice:${channelId}`).emit("voice:peer-joined", {
       channelId,
       peerId: socket.id,
-      user,
+      user: presenceUser,
     });
     broadcastChannelPresence(io, channel.serverId, channelId);
   });
@@ -57,6 +58,22 @@ export function registerVoiceHandlers(io, socket, user) {
   socket.on("voice:signal", ({ to, data }) => {
     if (!to || !data) return;
     io.to(to).emit("voice:signal", { from: socket.id, data });
+  });
+
+  socket.on("voice:state", (state) => {
+    const channelId = socket.data.voiceChannelId;
+    if (!channelId) return;
+    const current = room(channelId).get(socket.id);
+    if (!current) return;
+    const updated = {
+      ...current,
+      micOn: typeof state?.micOn === "boolean" ? state.micOn : current.micOn,
+      deafened: typeof state?.deafened === "boolean" ? state.deafened : current.deafened,
+      sharingScreen: typeof state?.sharingScreen === "boolean" ? state.sharingScreen : current.sharingScreen,
+    };
+    room(channelId).set(socket.id, updated);
+    socket.to(`voice:${channelId}`).emit("voice:peer-state", { peerId: socket.id, state: updated });
+    if (socket.data.voiceServerId) broadcastChannelPresence(io, socket.data.voiceServerId, channelId);
   });
 
   socket.on("voice:leave", () => leaveVoice(io, socket));

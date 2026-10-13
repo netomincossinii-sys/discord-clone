@@ -76,4 +76,7 @@ export interface PresenceUser {
   username: string
   color: string
   avatarImage?: string | null
+  micOn?: boolean
+  deafened?: boolean
+  sharingScreen?: boolean
 }
