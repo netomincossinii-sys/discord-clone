@@ -7,7 +7,7 @@ import { AuthScreen } from './AuthScreen'
 import { VoiceStage } from './VoiceStage'
 import { ConnectedVoiceBar } from './ConnectedVoiceBar'
 import { useVoice } from './useVoice'
-import { ProfileCard } from './ProfileCard'
+import { ProfileCard, type FriendRelationship, type ProfileServerContext } from './ProfileCard'
 import { EditProfileModal } from './EditProfileModal'
 import { StatusMenu } from './StatusMenu'
 import { VoiceDeviceMenu } from './VoiceDeviceMenu'
@@ -66,6 +66,7 @@ function App() {
   const [friends, setFriends] = useState<FriendUser[]>([])
   const [pendingIncoming, setPendingIncoming] = useState<PendingRequest[]>([])
   const [pendingOutgoing, setPendingOutgoing] = useState<PendingRequest[]>([])
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set())
   const [dmConversations, setDmConversations] = useState<DmConversation[]>([])
   const [activeDmConversationId, setActiveDmConversationId] = useState<string | null>(null)
   const [dmMessagesByConversation, setDmMessagesByConversation] = useState<Record<string, DmMessage[]>>({})
@@ -92,6 +93,10 @@ function App() {
   useEffect(() => {
     voiceRef.current = voice
   }, [voice])
+  const serversRef = useRef(servers)
+  useEffect(() => {
+    serversRef.current = servers
+  }, [servers])
 
   useEffect(() => {
     api
@@ -130,6 +135,7 @@ function App() {
       setPendingOutgoing(d.outgoing)
     })
     api.getDmConversations().then((d) => setDmConversations(d.conversations))
+    api.getBlocks().then((d) => setBlockedIds(new Set(d.blocked.map((b) => b.id))))
   }, [user])
 
   useEffect(() => {
@@ -219,6 +225,29 @@ function App() {
     s.on('dm:call_cancel', ({ conversationId }: { conversationId: string }) => {
       setIncomingCall((prev) => (prev?.conversationId === conversationId ? null : prev))
     })
+    s.on('voice:force_move', ({ channelId }: { channelId: string }) => {
+      voiceRef.current?.join(channelId)
+      const owningServer = serversRef.current.find((srv) => srv.channels.some((c) => c.id === channelId))
+      if (owningServer) {
+        setActiveServerId(owningServer.id)
+        setActiveChannelId(channelId)
+        setRailMode('servers')
+      }
+    })
+    s.on('server:kicked', ({ serverId, serverName }: { serverId: string; serverName: string }) => {
+      const kickedServer = serversRef.current.find((srv) => srv.id === serverId)
+      if (voiceRef.current?.channelId && kickedServer?.channels.some((c) => c.id === voiceRef.current?.channelId)) {
+        voiceRef.current.leave()
+      }
+      const remaining = serversRef.current.filter((srv) => srv.id !== serverId)
+      setServers(remaining)
+      setActiveServerId((prev) => {
+        if (prev !== serverId) return prev
+        setActiveChannelId(remaining[0]?.channels[0]?.id ?? null)
+        return remaining[0]?.id ?? null
+      })
+      alert(`Você foi removido do servidor "${serverName}".`)
+    })
 
     setSocket(s)
     return () => {
@@ -231,7 +260,9 @@ function App() {
     () => activeServer?.channels.find((c) => c.id === activeChannelId) ?? null,
     [activeServer, activeChannelId],
   )
-  const activeMessages = activeChannelId ? messagesByChannel[activeChannelId] ?? [] : []
+  const activeMessages = (activeChannelId ? messagesByChannel[activeChannelId] ?? [] : []).filter(
+    (m) => !blockedIds.has(m.authorId),
+  )
 
   const connectedVoiceUserIds = useMemo(() => {
     const ids = new Set<string>()
@@ -270,6 +301,32 @@ function App() {
     () => activeServer?.channels.filter((c) => !c.categoryId) ?? [],
     [activeServer],
   )
+
+  const profileRelationship = useMemo((): FriendRelationship => {
+    if (!profileViewUserId || !user || profileViewUserId === user.id) return 'self'
+    if (friends.some((f) => f.id === profileViewUserId)) return 'friends'
+    if (pendingIncoming.some((r) => r.user.id === profileViewUserId)) return 'incoming'
+    if (pendingOutgoing.some((r) => r.user.id === profileViewUserId)) return 'outgoing'
+    return 'none'
+  }, [profileViewUserId, user, friends, pendingIncoming, pendingOutgoing])
+
+  const profileIncomingRequestId = useMemo(
+    () => pendingIncoming.find((r) => r.user.id === profileViewUserId)?.id,
+    [pendingIncoming, profileViewUserId],
+  )
+
+  const profileServerContext = useMemo((): ProfileServerContext | null => {
+    if (!activeServer || !profileViewUserId) return null
+    const member = activeServer.members.find((m) => m.id === profileViewUserId)
+    if (!member) return null
+    return {
+      roles: activeServer.roles,
+      voiceChannels: activeServer.channels.filter((c) => c.type === 'VOICE'),
+      targetRoleIds: member.roleIds,
+      isTargetOwner: activeServer.ownerId === profileViewUserId,
+      isTargetInVoice: connectedVoiceUserIds.has(profileViewUserId),
+    }
+  }, [activeServer, profileViewUserId, connectedVoiceUserIds])
 
   function renderChannelRow(channel: Channel) {
     const isVoice = channel.type === 'VOICE'
@@ -531,6 +588,46 @@ function App() {
     setFriends((prev) => prev.filter((f) => f.id !== id))
     setPendingIncoming((prev) => prev.filter((r) => r.id !== id))
     setPendingOutgoing((prev) => prev.filter((r) => r.id !== id))
+  }
+
+  async function handleSendFriendRequestFromProfile(username: string) {
+    const result = await api.sendFriendRequest(username)
+    setPendingOutgoing((prev) => [...prev, { id: result.id, user: result.user }])
+  }
+
+  async function handleBlockUser(targetId: string) {
+    await api.blockUser(targetId)
+    setBlockedIds((prev) => new Set(prev).add(targetId))
+    setFriends((prev) => prev.filter((f) => f.id !== targetId))
+    setPendingIncoming((prev) => prev.filter((r) => r.user.id !== targetId))
+    setPendingOutgoing((prev) => prev.filter((r) => r.user.id !== targetId))
+  }
+
+  async function handleUnblockUser(targetId: string) {
+    await api.unblockUser(targetId)
+    setBlockedIds((prev) => {
+      const next = new Set(prev)
+      next.delete(targetId)
+      return next
+    })
+  }
+
+  async function handleSaveMemberRoles(targetId: string, roleIds: string[]) {
+    if (!activeServerId) return
+    await api.updateMemberRoles(activeServerId, targetId, roleIds)
+    await refreshServers()
+  }
+
+  async function handleMoveMemberVoice(targetId: string, channelId: string) {
+    if (!activeServerId) return
+    await api.moveMemberVoice(activeServerId, targetId, channelId)
+  }
+
+  async function handleKickMember(targetId: string) {
+    if (!activeServerId) return
+    await api.kickMember(activeServerId, targetId)
+    setProfileViewUserId(null)
+    await refreshServers()
   }
 
   async function openEditProfile() {
@@ -963,6 +1060,19 @@ function App() {
             setProfileViewUserId(null)
             openSettings(section)
           }}
+          relationship={profileRelationship}
+          incomingRequestId={profileIncomingRequestId}
+          isBlocked={blockedIds.has(profileViewUserId)}
+          isManager={isManager}
+          serverContext={profileServerContext}
+          onMessage={() => openDm(profileViewUserId)}
+          onAddFriend={handleSendFriendRequestFromProfile}
+          onAcceptFriendRequest={handleAcceptFriendRequest}
+          onBlock={handleBlockUser}
+          onUnblock={handleUnblockUser}
+          onSaveMemberRoles={handleSaveMemberRoles}
+          onMoveMemberVoice={handleMoveMemberVoice}
+          onKickMember={handleKickMember}
         />
       )}
 

@@ -4,7 +4,28 @@ import type { Profile } from './api'
 import { STATUS_META } from './api'
 import type { Section as SettingsSection } from './SettingsModal'
 import { Modal } from './Modal'
-import { RocketIcon, BellIcon, ShieldIcon, GearIcon } from './Icon'
+import {
+  RocketIcon,
+  BellIcon,
+  ShieldIcon,
+  GearIcon,
+  MessageCircleIcon,
+  UserPlusIcon,
+  UserXIcon,
+  CheckIcon,
+  BanIcon,
+  SwapIcon,
+} from './Icon'
+
+export type FriendRelationship = 'self' | 'friends' | 'incoming' | 'outgoing' | 'none'
+
+export interface ProfileServerContext {
+  roles: { id: string; name: string; color: string; isAdmin: boolean }[]
+  voiceChannels: { id: string; name: string }[]
+  targetRoleIds: string[]
+  isTargetOwner: boolean
+  isTargetInVoice: boolean
+}
 
 function useElapsed(startedAt: string | null) {
   const [elapsed, setElapsed] = useState('')
@@ -34,15 +55,44 @@ export function ProfileCard({
   onClose,
   onEdit,
   onOpenSettings,
+  relationship = 'none',
+  incomingRequestId,
+  isBlocked = false,
+  isManager = false,
+  serverContext = null,
+  onMessage,
+  onAddFriend,
+  onAcceptFriendRequest,
+  onBlock,
+  onUnblock,
+  onSaveMemberRoles,
+  onMoveMemberVoice,
+  onKickMember,
 }: {
   userId: string
   isOwnProfile: boolean
   onClose: () => void
   onEdit: () => void
   onOpenSettings?: (section: SettingsSection) => void
+  relationship?: FriendRelationship
+  incomingRequestId?: string
+  isBlocked?: boolean
+  isManager?: boolean
+  serverContext?: ProfileServerContext | null
+  onMessage?: () => void
+  onAddFriend?: (username: string) => void
+  onAcceptFriendRequest?: (requestId: string) => void
+  onBlock?: (userId: string) => void
+  onUnblock?: (userId: string) => void
+  onSaveMemberRoles?: (userId: string, roleIds: string[]) => void
+  onMoveMemberVoice?: (userId: string, channelId: string) => void
+  onKickMember?: (userId: string) => void
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const elapsed = useElapsed(profile?.activityStartedAt ?? null)
+  const [showRoleEditor, setShowRoleEditor] = useState(false)
+  const [pendingRoleIds, setPendingRoleIds] = useState<string[]>([])
+  const [showVoicePicker, setShowVoicePicker] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -53,6 +103,14 @@ export function ProfileCard({
       cancelled = true
     }
   }, [userId])
+
+  useEffect(() => {
+    setShowRoleEditor(false)
+    setShowVoicePicker(false)
+    setPendingRoleIds(serverContext?.targetRoleIds ?? [])
+  }, [userId, serverContext])
+
+  const canManageTarget = isManager && !!serverContext && !serverContext.isTargetOwner
 
   return (
     <Modal onClose={onClose} width={360}>
@@ -94,34 +152,146 @@ export function ProfileCard({
                 </div>
               </div>
             )}
+
             {isOwnProfile ? (
-              <button className="profile-edit-btn" onClick={onEdit}>
-                Editar perfil
-              </button>
+              <>
+                <button className="profile-edit-btn" onClick={onEdit}>
+                  Editar perfil
+                </button>
+                <div className="profile-action-row">
+                  <button className="profile-action-btn" onClick={() => onOpenSettings?.('boost')}>
+                    <RocketIcon size={18} />
+                    <span>Boost</span>
+                  </button>
+                  <button className="profile-action-btn" onClick={() => onOpenSettings?.('notif')}>
+                    <BellIcon size={18} />
+                    <span>Notificações</span>
+                  </button>
+                  <button className="profile-action-btn" onClick={() => onOpenSettings?.('privacidade')}>
+                    <ShieldIcon size={18} />
+                    <span>Privacidade</span>
+                  </button>
+                  <button className="profile-action-btn" onClick={() => onOpenSettings?.('conta')}>
+                    <GearIcon size={18} />
+                    <span>Configurações</span>
+                  </button>
+                </div>
+              </>
             ) : (
-              <button className="profile-edit-btn" onClick={onClose}>
-                Fechar
-              </button>
-            )}
-            {isOwnProfile && (
-              <div className="profile-action-row">
-                <button className="profile-action-btn" onClick={() => onOpenSettings?.('boost')}>
-                  <RocketIcon size={18} />
-                  <span>Boost</span>
+              <>
+                <button className="profile-edit-btn" onClick={onMessage}>
+                  <MessageCircleIcon size={16} /> Enviar mensagem
                 </button>
-                <button className="profile-action-btn" onClick={() => onOpenSettings?.('notif')}>
-                  <BellIcon size={18} />
-                  <span>Notificações</span>
+
+                {!isBlocked && relationship === 'none' && (
+                  <button className="profile-secondary-btn" onClick={() => onAddFriend?.(profile.username)}>
+                    <UserPlusIcon size={16} /> Adicionar amigo
+                  </button>
+                )}
+                {!isBlocked && relationship === 'incoming' && incomingRequestId && (
+                  <button
+                    className="profile-secondary-btn"
+                    onClick={() => onAcceptFriendRequest?.(incomingRequestId)}
+                  >
+                    <CheckIcon size={16} /> Aceitar pedido de amizade
+                  </button>
+                )}
+                {!isBlocked && relationship === 'outgoing' && (
+                  <div className="profile-hint-text">Pedido de amizade enviado</div>
+                )}
+
+                <button
+                  className="profile-danger-btn"
+                  onClick={() => {
+                    if (isBlocked) {
+                      onUnblock?.(userId)
+                    } else if (
+                      window.confirm(
+                        `Bloquear ${profile.username}? Essa pessoa não vai conseguir te mandar mensagem nem pedido de amizade, e as mensagens dela ficam escondidas nos servidores em comum.`,
+                      )
+                    ) {
+                      onBlock?.(userId)
+                    }
+                  }}
+                >
+                  <BanIcon size={16} /> {isBlocked ? 'Desbloquear' : 'Bloquear'}
                 </button>
-                <button className="profile-action-btn" onClick={() => onOpenSettings?.('privacidade')}>
-                  <ShieldIcon size={18} />
-                  <span>Privacidade</span>
-                </button>
-                <button className="profile-action-btn" onClick={() => onOpenSettings?.('conta')}>
-                  <GearIcon size={18} />
-                  <span>Configurações</span>
-                </button>
-              </div>
+
+                {canManageTarget && (
+                  <>
+                    <div className="profile-divider" />
+
+                    <button className="profile-secondary-btn" onClick={() => setShowRoleEditor((v) => !v)}>
+                      <ShieldIcon size={16} /> Gerenciar cargos
+                    </button>
+                    {showRoleEditor && (
+                      <div className="profile-inline-panel">
+                        {serverContext!.roles.length === 0 ? (
+                          <div className="profile-hint-text">Esse servidor ainda não tem cargos.</div>
+                        ) : (
+                          serverContext!.roles.map((role) => (
+                            <label className="profile-role-check" key={role.id}>
+                              <input
+                                type="checkbox"
+                                checked={pendingRoleIds.includes(role.id)}
+                                onChange={(e) =>
+                                  setPendingRoleIds((prev) =>
+                                    e.target.checked ? [...prev, role.id] : prev.filter((id) => id !== role.id),
+                                  )
+                                }
+                              />
+                              <span className="profile-role-dot" style={{ background: role.color }} />
+                              {role.name}
+                            </label>
+                          ))
+                        )}
+                        <button
+                          className="profile-inline-save-btn"
+                          onClick={() => {
+                            onSaveMemberRoles?.(userId, pendingRoleIds)
+                            setShowRoleEditor(false)
+                          }}
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    )}
+
+                    {serverContext!.isTargetInVoice && (
+                      <>
+                        <button className="profile-secondary-btn" onClick={() => setShowVoicePicker((v) => !v)}>
+                          <SwapIcon size={16} /> Mover de canal de voz
+                        </button>
+                        {showVoicePicker && (
+                          <div className="profile-inline-panel">
+                            {serverContext!.voiceChannels.map((channel) => (
+                              <button
+                                key={channel.id}
+                                className="profile-voice-channel-option"
+                                onClick={() => {
+                                  onMoveMemberVoice?.(userId, channel.id)
+                                  setShowVoicePicker(false)
+                                }}
+                              >
+                                🔊 {channel.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    <button
+                      className="profile-danger-btn"
+                      onClick={() => {
+                        if (window.confirm(`Expulsar ${profile.username} do servidor?`)) onKickMember?.(userId)
+                      }}
+                    >
+                      <UserXIcon size={16} /> Expulsar do servidor
+                    </button>
+                  </>
+                )}
+              </>
             )}
           </div>
         </div>

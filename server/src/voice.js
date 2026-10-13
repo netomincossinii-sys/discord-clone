@@ -16,6 +16,16 @@ export function getChannelPresence(channelId) {
   return presenceList(channelId).map(({ user }) => user);
 }
 
+export function forceMoveUser(io, userId, serverId, channelId) {
+  for (const socket of io.sockets.sockets.values()) {
+    if (socket.data.userId === userId && socket.data.voiceServerId === serverId && socket.data.voiceChannelId) {
+      socket.emit("voice:force_move", { channelId });
+      return true;
+    }
+  }
+  return false;
+}
+
 function broadcastChannelPresence(io, serverId, channelId) {
   io.to(`server:${serverId}`).emit("voice:channel-update", {
     channelId,

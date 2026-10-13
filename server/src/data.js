@@ -70,6 +70,18 @@ export async function getServersForUser(userId) {
   });
 }
 
+export async function isBlockedEitherWay(userAId, userBId) {
+  const block = await prisma.block.findFirst({
+    where: {
+      OR: [
+        { blockerId: userAId, blockedId: userBId },
+        { blockerId: userBId, blockedId: userAId },
+      ],
+    },
+  });
+  return !!block;
+}
+
 export async function isServerManager(serverId, userId) {
   const server = await prisma.server.findUnique({ where: { id: serverId }, select: { ownerId: true } });
   if (!server) return false;

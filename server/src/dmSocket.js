@@ -1,6 +1,6 @@
 import { prisma } from "./db.js";
 import { emitToUser } from "./presence.js";
-import { isValidAttachment } from "./data.js";
+import { isValidAttachment, isBlockedEitherWay } from "./data.js";
 
 function otherParticipant(conversation, userId) {
   return conversation.userAId === userId ? conversation.userBId : conversation.userAId;
@@ -14,6 +14,10 @@ export function registerDmHandlers(io, socket, dbUser) {
     const conversation = await prisma.dmConversation.findUnique({ where: { id: conversationId } });
     if (!conversation) return;
     if (conversation.userAId !== dbUser.id && conversation.userBId !== dbUser.id) return;
+    if (await isBlockedEitherWay(dbUser.id, otherParticipant(conversation, dbUser.id))) {
+      socket.emit("dm:send_blocked", { conversationId });
+      return;
+    }
 
     const message = await prisma.dmMessage.create({
       data: {

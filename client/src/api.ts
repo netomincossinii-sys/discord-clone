@@ -143,6 +143,24 @@ export function deleteRole(serverId: string, roleId: string) {
   return request<{ ok: true }>(`/api/servers/${serverId}/roles/${roleId}`, { method: 'DELETE' })
 }
 
+export function updateMemberRoles(serverId: string, userId: string, roleIds: string[]) {
+  return request<{ ok: true }>(`/api/servers/${serverId}/members/${userId}/roles`, {
+    method: 'PATCH',
+    body: JSON.stringify({ roleIds }),
+  })
+}
+
+export function moveMemberVoice(serverId: string, userId: string, channelId: string) {
+  return request<{ ok: true }>(`/api/servers/${serverId}/members/${userId}/move-voice`, {
+    method: 'POST',
+    body: JSON.stringify({ channelId }),
+  })
+}
+
+export function kickMember(serverId: string, userId: string) {
+  return request<{ ok: true }>(`/api/servers/${serverId}/members/${userId}`, { method: 'DELETE' })
+}
+
 export interface Profile {
   id: string
   username: string
@@ -255,4 +273,23 @@ export function startDm(userId: string) {
 
 export function getDmMessages(conversationId: string) {
   return request<{ messages: DmMessage[] }>(`/api/dms/${conversationId}/messages`)
+}
+
+export interface BlockedUser {
+  id: string
+  username: string
+  color: string
+  avatarImage: string | null
+}
+
+export function getBlocks() {
+  return request<{ blocked: BlockedUser[] }>('/api/blocks')
+}
+
+export function blockUser(userId: string) {
+  return request<{ ok: true }>(`/api/blocks/${userId}`, { method: 'POST' })
+}
+
+export function unblockUser(userId: string) {
+  return request<{ ok: true }>(`/api/blocks/${userId}`, { method: 'DELETE' })
 }

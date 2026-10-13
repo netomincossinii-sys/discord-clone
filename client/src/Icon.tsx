@@ -331,6 +331,37 @@ export function BellIcon(props: IconProps) {
   )
 }
 
+export function BanIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="4.9" y1="4.9" x2="19.1" y2="19.1" />
+    </Base>
+  )
+}
+
+export function SwapIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <polyline points="17 1 21 5 17 9" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </Base>
+  )
+}
+
+export function UserXIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="17" y1="8" x2="22" y2="13" />
+      <line x1="22" y1="8" x2="17" y2="13" />
+    </Base>
+  )
+}
+
 export function GearIcon(props: IconProps) {
   return (
     <Base {...props}>

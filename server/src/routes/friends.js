@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { isOnline, emitToUser } from "../presence.js";
+import { isBlockedEitherWay } from "../data.js";
 
 const USER_SUMMARY_SELECT = { id: true, username: true, color: true, avatarImage: true, status: true };
 
@@ -57,6 +58,7 @@ export function friendsRouter(io) {
     });
     if (!target) return res.status(404).json({ error: "user_not_found" });
     if (target.id === req.userId) return res.status(400).json({ error: "cannot_add_self" });
+    if (await isBlockedEitherWay(req.userId, target.id)) return res.status(403).json({ error: "blocked" });
 
     const existing = await prisma.friendship.findFirst({
       where: {

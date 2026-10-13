@@ -1757,10 +1757,128 @@ body {
   color: #fff;
   font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .profile-edit-btn:hover {
   background: var(--color-accent-hover);
+}
+
+.profile-secondary-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-bg-600);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.profile-secondary-btn:hover {
+  background: var(--color-bg-500);
+  color: #fff;
+}
+
+.profile-danger-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(237, 66, 69, 0.12);
+  color: var(--color-danger);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.profile-danger-btn:hover {
+  background: rgba(237, 66, 69, 0.22);
+}
+
+.profile-divider {
+  margin: 12px 0;
+  border-top: 1px solid var(--color-bg-600);
+}
+
+.profile-hint-text {
+  margin-top: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.profile-inline-panel {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--color-bg-900);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-role-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.profile-role-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.profile-inline-save-btn {
+  margin-top: 4px;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.profile-inline-save-btn:hover {
+  background: var(--color-accent-hover);
+}
+
+.profile-voice-channel-option {
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background: var(--color-bg-700);
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.profile-voice-channel-option:hover {
+  background: var(--color-bg-600);
+  color: #fff;
 }
 
 .profile-action-row {

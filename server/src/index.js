@@ -12,6 +12,7 @@ import { friendsRouter } from "./routes/friends.js";
 import { dmsRouter } from "./routes/dms.js";
 import { serversRouter } from "./routes/servers.js";
 import { turnRouter } from "./routes/turn.js";
+import { blocksRouter } from "./routes/blocks.js";
 import { requireAuth, verifyToken, COOKIE_NAME } from "./auth.js";
 import { getServersForUser, getChannelWithAccess, getHistory, addMessage, isValidAttachment } from "./data.js";
 import { registerVoiceHandlers, getChannelPresence } from "./voice.js";
@@ -59,6 +60,7 @@ const io = new Server(httpServer, {
 
 app.use("/api", friendsRouter(io));
 app.use("/api", serversRouter(io));
+app.use("/api", blocksRouter(io));
 
 io.use((socket, next) => {
   const header = socket.handshake.headers.cookie;

@@ -2,6 +2,8 @@ import { Router } from "express";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { generateInviteCode, inviteExpiresAt, isInviteExpired, isServerManager } from "../data.js";
+import { emitToUser } from "../presence.js";
+import { forceMoveUser } from "../voice.js";
 
 const MAX_ICON_BASE64_LENGTH = 600_000; // ~450KB decoded, generous for a small square icon
 const MAX_BANNER_BASE64_LENGTH = 1_500_000; // ~1.1MB decoded, generous for a wide banner
@@ -288,6 +290,60 @@ export function serversRouter(io) {
     if (!role) return res.status(404).json({ error: "not_found" });
 
     await prisma.role.delete({ where: { id: role.id } });
+    notifyServerUpdated(req.params.id);
+    res.json({ ok: true });
+  });
+
+  router.patch("/servers/:id/members/:userId/roles", requireAuth, requireManager, async (req, res) => {
+    const membership = await prisma.membership.findUnique({
+      where: { userId_serverId: { userId: req.params.userId, serverId: req.params.id } },
+    });
+    if (!membership) return res.status(404).json({ error: "not_found" });
+
+    const { roleIds } = req.body ?? {};
+    if (!Array.isArray(roleIds)) return res.status(400).json({ error: "invalid_roleIds" });
+
+    const validRoles = await prisma.role.findMany({
+      where: { serverId: req.params.id, id: { in: roleIds } },
+      select: { id: true },
+    });
+
+    await prisma.$transaction([
+      prisma.membershipRole.deleteMany({ where: { membershipId: membership.id } }),
+      ...(validRoles.length > 0
+        ? [
+            prisma.membershipRole.createMany({
+              data: validRoles.map((r) => ({ membershipId: membership.id, roleId: r.id })),
+            }),
+          ]
+        : []),
+    ]);
+
+    notifyServerUpdated(req.params.id);
+    res.json({ ok: true });
+  });
+
+  router.post("/servers/:id/members/:userId/move-voice", requireAuth, requireManager, async (req, res) => {
+    const { channelId } = req.body ?? {};
+    const channel = await prisma.channel.findFirst({ where: { id: channelId, serverId: req.params.id, type: "VOICE" } });
+    if (!channel) return res.status(400).json({ error: "invalid_channel" });
+
+    const moved = forceMoveUser(io, req.params.userId, req.params.id, channel.id);
+    if (!moved) return res.status(400).json({ error: "user_not_in_voice" });
+    res.json({ ok: true });
+  });
+
+  router.delete("/servers/:id/members/:userId", requireAuth, requireManager, async (req, res) => {
+    const server = await prisma.server.findUnique({ where: { id: req.params.id } });
+    if (!server) return res.status(404).json({ error: "not_found" });
+    if (server.ownerId === req.params.userId) return res.status(400).json({ error: "cannot_kick_owner" });
+
+    const { count } = await prisma.membership.deleteMany({
+      where: { userId: req.params.userId, serverId: req.params.id },
+    });
+    if (count === 0) return res.status(404).json({ error: "not_found" });
+
+    emitToUser(io, req.params.userId, "server:kicked", { serverId: req.params.id, serverName: server.name });
     notifyServerUpdated(req.params.id);
     res.json({ ok: true });
   });
