@@ -49,10 +49,10 @@ export function getState() {
   return request<{ servers: import('./types').ServerInfo[] }>('/api/state')
 }
 
-export function createServer(name: string, icon?: string) {
+export function createServer(name: string, icon?: string, iconImage?: string | null) {
   return request<{ server: import('./types').ServerInfo }>('/api/servers', {
     method: 'POST',
-    body: JSON.stringify({ name, icon }),
+    body: JSON.stringify({ name, icon, iconImage }),
   })
 }
 
@@ -79,6 +79,68 @@ export function leaveServer(serverId: string) {
 
 export function deleteServer(serverId: string) {
   return request<{ ok: true }>(`/api/servers/${serverId}`, { method: 'DELETE' })
+}
+
+export interface ServerUpdate {
+  name?: string
+  icon?: string | null
+  iconImage?: string | null
+  bannerColor?: string | null
+  bannerImage?: string | null
+}
+
+export function updateServer(serverId: string, update: ServerUpdate) {
+  return request<{ server: import('./types').ServerInfo }>(`/api/servers/${serverId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(update),
+  })
+}
+
+export function createChannel(serverId: string, name: string, type: 'TEXT' | 'VOICE', categoryId?: string | null) {
+  return request<{ channel: import('./types').Channel }>(`/api/servers/${serverId}/channels`, {
+    method: 'POST',
+    body: JSON.stringify({ name, type, categoryId }),
+  })
+}
+
+export function updateChannel(
+  serverId: string,
+  channelId: string,
+  update: { name?: string; categoryId?: string | null; roleIds?: string[] },
+) {
+  return request<{ ok: true }>(`/api/servers/${serverId}/channels/${channelId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(update),
+  })
+}
+
+export function createCategory(serverId: string, name: string) {
+  return request<{ category: import('./types').Category }>(`/api/servers/${serverId}/categories`, {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export function createRole(serverId: string, name: string, color: string, isAdmin?: boolean) {
+  return request<{ role: import('./types').ServerRole }>(`/api/servers/${serverId}/roles`, {
+    method: 'POST',
+    body: JSON.stringify({ name, color, isAdmin }),
+  })
+}
+
+export function updateRole(
+  serverId: string,
+  roleId: string,
+  update: { name?: string; color?: string; isAdmin?: boolean; memberIds?: string[] },
+) {
+  return request<{ ok: true }>(`/api/servers/${serverId}/roles/${roleId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(update),
+  })
+}
+
+export function deleteRole(serverId: string, roleId: string) {
+  return request<{ ok: true }>(`/api/servers/${serverId}/roles/${roleId}`, { method: 'DELETE' })
 }
 
 export interface Profile {

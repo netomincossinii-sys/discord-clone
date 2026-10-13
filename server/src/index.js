@@ -29,7 +29,6 @@ app.use(cookieParser());
 app.use("/api", authRouter);
 app.use("/api", profileRouter);
 app.use("/api", dmsRouter);
-app.use("/api", serversRouter);
 app.use("/api", turnRouter);
 
 function formatServerWithMembers(server) {
@@ -42,6 +41,7 @@ function formatServerWithMembers(server) {
       color: m.user.color,
       avatarImage: m.user.avatarImage,
       online: isOnline(m.user.id),
+      roleIds: m.roles.map((mr) => mr.roleId),
     })),
   };
 }
@@ -58,6 +58,7 @@ const io = new Server(httpServer, {
 });
 
 app.use("/api", friendsRouter(io));
+app.use("/api", serversRouter(io));
 
 io.use((socket, next) => {
   const header = socket.handshake.headers.cookie;

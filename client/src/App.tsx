@@ -19,12 +19,17 @@ import { DmCallRingModal } from './DmCallRingModal'
 import { AddServerModal } from './AddServerModal'
 import { ServerInviteModal } from './ServerInviteModal'
 import { ServerMenu } from './ServerMenu'
+import { EditServerModal } from './EditServerModal'
+import { CreateChannelModal } from './CreateChannelModal'
+import { CreateCategoryModal } from './CreateCategoryModal'
+import { ChannelSettingsModal } from './ChannelSettingsModal'
+import { RolesModal } from './RolesModal'
 import { SFX } from './sfx'
-import { UsersIcon, MessageCircleIcon, PlusIcon, MicIcon, MicOffIcon, HeadphonesIcon, HeadphonesOffIcon, ChevronDownIcon, SettingsIcon } from './Icon'
+import { UsersIcon, MessageCircleIcon, PlusIcon, MicIcon, MicOffIcon, HeadphonesIcon, HeadphonesOffIcon, ChevronDownIcon, SettingsIcon, GearIcon, LockIcon } from './Icon'
 import { isDesktopNotificationsEnabled } from './voicePrefs'
 import { STATUS_META, API_URL } from './api'
 import type { Profile, UserStatus, FriendUser, PendingRequest, DmConversation, DmMessage } from './api'
-import type { ChatMessage, PresenceUser, ServerInfo, Attachment } from './types'
+import type { ChatMessage, PresenceUser, ServerInfo, Channel, Attachment } from './types'
 import { CrownIcon } from './Icon'
 import { Composer } from './Composer'
 import { MessageAttachment } from './MessageAttachment'
@@ -62,6 +67,11 @@ function App() {
   const [pendingInviteCode, setPendingInviteCode] = useState<string | null>(null)
   const [serverMenuOpenId, setServerMenuOpenId] = useState<string | null>(null)
   const [inviteModalServerId, setInviteModalServerId] = useState<string | null>(null)
+  const [showEditServer, setShowEditServer] = useState(false)
+  const [showCreateChannel, setShowCreateChannel] = useState(false)
+  const [showCreateCategory, setShowCreateCategory] = useState(false)
+  const [showRoles, setShowRoles] = useState(false)
+  const [editingChannelId, setEditingChannelId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const localVoiceUser: PresenceUser | null = useMemo(
@@ -162,6 +172,9 @@ function App() {
         prev.map((s) => ({ ...s, members: s.members.map((m) => (m.id === userId ? { ...m, online } : m)) }))
       )
     })
+    s.on('server:updated', () => {
+      api.getState().then((data) => setServers(data.servers))
+    })
     s.on('dm:new_message', (message: DmMessage) => {
       setDmMessagesByConversation((prev) => ({
         ...prev,
@@ -226,6 +239,59 @@ function App() {
       return a.username.localeCompare(b.username)
     })
   }, [activeServer])
+
+  const isManager = useMemo(() => {
+    if (!activeServer || !user) return false
+    if (activeServer.ownerId === user.id) return true
+    const me = activeServer.members.find((m) => m.id === user.id)
+    return !!me?.roleIds.some((roleId) => activeServer.roles.find((r) => r.id === roleId)?.isAdmin)
+  }, [activeServer, user])
+
+  const categorizedChannels = useMemo(
+    () =>
+      activeServer?.categories.map((category) => ({
+        category,
+        channels: activeServer.channels.filter((c) => c.categoryId === category.id),
+      })) ?? [],
+    [activeServer],
+  )
+  const uncategorizedChannels = useMemo(
+    () => activeServer?.channels.filter((c) => !c.categoryId) ?? [],
+    [activeServer],
+  )
+
+  function renderChannelRow(channel: Channel) {
+    const isVoice = channel.type === 'VOICE'
+    const isActive = (isVoice ? voice.channelId : activeChannelId) === channel.id
+    return (
+      <div key={channel.id}>
+        <div className="channel-item-row">
+          <button className={`channel-item ${isActive ? 'active' : ''}`} onClick={() => selectChannel(channel.id, channel.type)}>
+            {isVoice ? '🔊' : '#'} {channel.name}
+            {channel.locked && <LockIcon size={12} className="channel-lock-icon" />}
+          </button>
+          {isManager && (
+            <button className="channel-gear-btn" onClick={() => setEditingChannelId(channel.id)} title="Editar canal">
+              <GearIcon size={14} />
+            </button>
+          )}
+        </div>
+        {isVoice &&
+          (voice.channelPresence.get(channel.id) ?? []).map((member) => (
+            <div key={member.id} className="voice-channel-member">
+              {member.avatarImage ? (
+                <img className="voice-channel-member-avatar-img" src={member.avatarImage} alt="" />
+              ) : (
+                <div className="voice-channel-member-avatar-fallback" style={{ background: member.color }}>
+                  {member.username.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <span className="voice-channel-member-name">{member.username}</span>
+            </div>
+          ))}
+      </div>
+    )
+  }
 
   useEffect(() => {
     if (socket && activeChannel?.type === 'TEXT') {
@@ -293,10 +359,14 @@ function App() {
     setActiveChannelId(firstText?.id ?? server.channels[0]?.id ?? null)
   }
 
-  async function handleCreateServer(name: string, icon: string) {
-    const { server } = await api.createServer(name, icon)
+  async function refreshServers() {
     const data = await api.getState()
     setServers(data.servers)
+  }
+
+  async function handleCreateServer(name: string, icon: string, iconImage: string | null) {
+    const { server } = await api.createServer(name, icon, iconImage)
+    await refreshServers()
     selectServer(server)
     setShowAddServer(false)
     socket?.emit('rooms:sync')
@@ -304,12 +374,54 @@ function App() {
 
   async function handleJoinServer(code: string) {
     const { server } = await api.joinServerByInvite(code)
-    const data = await api.getState()
-    setServers(data.servers)
+    await refreshServers()
     selectServer(server)
     setShowAddServer(false)
     setPendingInviteCode(null)
     socket?.emit('rooms:sync')
+  }
+
+  async function handleUpdateServer(serverId: string, update: Parameters<typeof api.updateServer>[1]) {
+    await api.updateServer(serverId, update)
+    await refreshServers()
+  }
+
+  async function handleCreateChannel(serverId: string, name: string, type: 'TEXT' | 'VOICE', categoryId: string | null) {
+    await api.createChannel(serverId, name, type, categoryId)
+    await refreshServers()
+  }
+
+  async function handleUpdateChannel(serverId: string, channelId: string, update: { name: string; roleIds: string[] }) {
+    await api.updateChannel(serverId, channelId, update)
+    await refreshServers()
+  }
+
+  async function handleCreateCategory(serverId: string, name: string) {
+    await api.createCategory(serverId, name)
+    await refreshServers()
+  }
+
+  async function handleCreateRole(
+    serverId: string,
+    update: { name: string; color: string; isAdmin: boolean; memberIds: string[] },
+  ) {
+    const { role } = await api.createRole(serverId, update.name, update.color, update.isAdmin)
+    if (update.memberIds.length > 0) await api.updateRole(serverId, role.id, { memberIds: update.memberIds })
+    await refreshServers()
+  }
+
+  async function handleUpdateRole(
+    serverId: string,
+    roleId: string,
+    update: { name: string; color: string; isAdmin: boolean; memberIds: string[] },
+  ) {
+    await api.updateRole(serverId, roleId, update)
+    await refreshServers()
+  }
+
+  async function handleDeleteRole(serverId: string, roleId: string) {
+    await api.deleteRole(serverId, roleId)
+    await refreshServers()
   }
 
   async function handleLeaveOrDeleteServer(server: ServerInfo) {
@@ -476,7 +588,7 @@ function App() {
               title={server.name}
               onClick={() => selectServer(server)}
             >
-              {server.icon}
+              {server.iconImage ? <img className="server-pill-img" src={server.iconImage} alt="" /> : server.icon}
             </button>
           </div>
         ))}
@@ -489,6 +601,16 @@ function App() {
 
       {railMode === 'servers' && (
       <aside className="channel-list">
+        {(activeServer?.bannerImage || activeServer?.bannerColor) && (
+          <div
+            className="server-banner-strip"
+            style={
+              activeServer.bannerImage
+                ? { backgroundImage: `url(${activeServer.bannerImage})` }
+                : { background: activeServer.bannerColor ?? undefined }
+            }
+          />
+        )}
         <div className="server-title-row">
           <div className="server-title">{activeServer?.name ?? ''}</div>
           {activeServer && (
@@ -499,8 +621,25 @@ function App() {
           {activeServer && serverMenuOpenId === activeServer.id && (
             <ServerMenu
               isOwner={activeServer.ownerId === user.id}
+              isManager={isManager}
               onInvite={() => {
                 setInviteModalServerId(activeServer.id)
+                setServerMenuOpenId(null)
+              }}
+              onEditServer={() => {
+                setShowEditServer(true)
+                setServerMenuOpenId(null)
+              }}
+              onRoles={() => {
+                setShowRoles(true)
+                setServerMenuOpenId(null)
+              }}
+              onCreateChannel={() => {
+                setShowCreateChannel(true)
+                setServerMenuOpenId(null)
+              }}
+              onCreateCategory={() => {
+                setShowCreateCategory(true)
                 setServerMenuOpenId(null)
               }}
               onLeaveOrDelete={() => handleLeaveOrDeleteServer(activeServer)}
@@ -508,43 +647,16 @@ function App() {
             />
           )}
         </div>
+        {categorizedChannels.map(({ category, channels }) => (
+          <div key={category.id}>
+            <div className="channel-group-label">{category.name.toUpperCase()}</div>
+            {channels.map(renderChannelRow)}
+          </div>
+        ))}
         <div className="channel-group-label">CANAIS DE TEXTO</div>
-        {activeServer?.channels
-          .filter((c) => c.type === 'TEXT')
-          .map((channel) => (
-            <button
-              key={channel.id}
-              className={`channel-item ${channel.id === activeChannelId ? 'active' : ''}`}
-              onClick={() => selectChannel(channel.id, 'TEXT')}
-            >
-              # {channel.name}
-            </button>
-          ))}
+        {uncategorizedChannels.filter((c) => c.type === 'TEXT').map(renderChannelRow)}
         <div className="channel-group-label">CANAIS DE VOZ</div>
-        {activeServer?.channels
-          .filter((c) => c.type === 'VOICE')
-          .map((channel) => (
-            <div key={channel.id}>
-              <button
-                className={`channel-item ${channel.id === voice.channelId ? 'active' : ''}`}
-                onClick={() => selectChannel(channel.id, 'VOICE')}
-              >
-                🔊 {channel.name}
-              </button>
-              {(voice.channelPresence.get(channel.id) ?? []).map((member) => (
-                <div key={member.id} className="voice-channel-member">
-                  {member.avatarImage ? (
-                    <img className="voice-channel-member-avatar-img" src={member.avatarImage} alt="" />
-                  ) : (
-                    <div className="voice-channel-member-avatar-fallback" style={{ background: member.color }}>
-                      {member.username.slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
-                  <span className="voice-channel-member-name">{member.username}</span>
-                </div>
-              ))}
-            </div>
-          ))}
+        {uncategorizedChannels.filter((c) => c.type === 'VOICE').map(renderChannelRow)}
       </aside>
       )}
 
@@ -847,6 +959,7 @@ function App() {
 
       {showAddServer && (
         <AddServerModal
+          username={user.username}
           initialInviteCode={pendingInviteCode ?? undefined}
           onClose={() => {
             setShowAddServer(false)
@@ -861,6 +974,49 @@ function App() {
         <ServerInviteModal
           server={servers.find((s) => s.id === inviteModalServerId)!}
           onClose={() => setInviteModalServerId(null)}
+        />
+      )}
+
+      {showEditServer && activeServer && (
+        <EditServerModal
+          server={activeServer}
+          onClose={() => setShowEditServer(false)}
+          onSave={(update) => handleUpdateServer(activeServer.id, update)}
+        />
+      )}
+
+      {showCreateChannel && activeServer && (
+        <CreateChannelModal
+          categories={activeServer.categories}
+          onClose={() => setShowCreateChannel(false)}
+          onCreate={(name, type, categoryId) => handleCreateChannel(activeServer.id, name, type, categoryId)}
+        />
+      )}
+
+      {showCreateCategory && activeServer && (
+        <CreateCategoryModal
+          onClose={() => setShowCreateCategory(false)}
+          onCreate={(name) => handleCreateCategory(activeServer.id, name)}
+        />
+      )}
+
+      {showRoles && activeServer && (
+        <RolesModal
+          roles={activeServer.roles}
+          members={activeServer.members}
+          onClose={() => setShowRoles(false)}
+          onCreateRole={(update) => handleCreateRole(activeServer.id, update)}
+          onUpdateRole={(roleId, update) => handleUpdateRole(activeServer.id, roleId, update)}
+          onDeleteRole={(roleId) => handleDeleteRole(activeServer.id, roleId)}
+        />
+      )}
+
+      {editingChannelId && activeServer && (
+        <ChannelSettingsModal
+          channel={activeServer.channels.find((c) => c.id === editingChannelId)!}
+          roles={activeServer.roles}
+          onClose={() => setEditingChannelId(null)}
+          onSave={(update) => handleUpdateChannel(activeServer.id, editingChannelId, update)}
         />
       )}
     </div>

@@ -37,22 +37,65 @@ export function isValidAttachment(attachment) {
 }
 
 export async function getServersForUser(userId) {
-  return prisma.server.findMany({
+  const servers = await prisma.server.findMany({
     where: { memberships: { some: { userId } } },
     include: {
-      channels: { orderBy: { name: "asc" } },
-      memberships: { include: { user: { select: { id: true, username: true, color: true, avatarImage: true } } } },
+      channels: { orderBy: { name: "asc" }, include: { roleAccess: true } },
+      categories: { orderBy: { name: "asc" } },
+      roles: { orderBy: { name: "asc" } },
+      memberships: {
+        include: {
+          user: { select: { id: true, username: true, color: true, avatarImage: true } },
+          roles: true,
+        },
+      },
     },
     orderBy: { name: "asc" },
   });
+
+  return servers.map((server) => {
+    const isOwner = server.ownerId === userId;
+    const myMembership = server.memberships.find((m) => m.userId === userId);
+    const myRoleIds = new Set((myMembership?.roles ?? []).map((mr) => mr.roleId));
+    const isManager = isOwner || server.roles.some((r) => r.isAdmin && myRoleIds.has(r.id));
+    const channels = server.channels
+      .filter((c) => isManager || c.roleAccess.length === 0 || c.roleAccess.some((ra) => myRoleIds.has(ra.roleId)))
+      .map((c) => ({
+        ...c,
+        locked: c.roleAccess.length > 0,
+        roleIds: c.roleAccess.map((ra) => ra.roleId),
+        roleAccess: undefined,
+      }));
+    return { ...server, channels };
+  });
+}
+
+export async function isServerManager(serverId, userId) {
+  const server = await prisma.server.findUnique({ where: { id: serverId }, select: { ownerId: true } });
+  if (!server) return false;
+  if (server.ownerId === userId) return true;
+  const membership = await prisma.membership.findUnique({
+    where: { userId_serverId: { userId, serverId } },
+    include: { roles: { include: { role: true } } },
+  });
+  return !!membership?.roles.some((mr) => mr.role.isAdmin);
 }
 
 export async function getChannelWithAccess(channelId, userId) {
   const channel = await prisma.channel.findFirst({
     where: { id: channelId, server: { memberships: { some: { userId } } } },
-    include: { server: true },
+    include: { server: true, roleAccess: true },
   });
-  return channel;
+  if (!channel) return null;
+  if (channel.roleAccess.length === 0) return channel;
+  if (channel.server.ownerId === userId) return channel;
+  const hasAccess = await prisma.membershipRole.findFirst({
+    where: {
+      roleId: { in: channel.roleAccess.map((ra) => ra.roleId) },
+      membership: { userId, serverId: channel.serverId },
+    },
+  });
+  return hasAccess ? channel : null;
 }
 
 export async function getHistory(channelId, limit = 100) {

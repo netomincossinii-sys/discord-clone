@@ -4,6 +4,21 @@ export interface Channel {
   id: string
   name: string
   type: ChannelType
+  categoryId: string | null
+  locked: boolean
+  roleIds: string[]
+}
+
+export interface Category {
+  id: string
+  name: string
+}
+
+export interface ServerRole {
+  id: string
+  name: string
+  color: string
+  isAdmin: boolean
 }
 
 export interface ServerMember {
@@ -12,14 +27,20 @@ export interface ServerMember {
   color: string
   avatarImage: string | null
   online: boolean
+  roleIds: string[]
 }
 
 export interface ServerInfo {
   id: string
   name: string
   icon: string
+  iconImage: string | null
+  bannerColor: string | null
+  bannerImage: string | null
   ownerId: string | null
   channels: Channel[]
+  categories: Category[]
+  roles: ServerRole[]
   members: ServerMember[]
 }
 

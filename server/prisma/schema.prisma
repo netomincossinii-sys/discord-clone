@@ -96,10 +96,13 @@ model DmMessage {
 }
 
 model Server {
-  id      String @id @default(uuid())
-  name    String
-  icon    String
-  ownerId String?
+  id          String  @id @default(uuid())
+  name        String
+  icon        String
+  iconImage   String?
+  bannerColor String?
+  bannerImage String?
+  ownerId     String?
 
   inviteCode          String?   @unique
   inviteCodeCreatedAt DateTime?
@@ -107,6 +110,8 @@ model Server {
   owner       User?        @relation("ServerOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   channels    Channel[]
   memberships Membership[]
+  categories  Category[]
+  roles       Role[]
 }
 
 model Membership {
@@ -116,18 +121,65 @@ model Membership {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  roles  MembershipRole[]
 
   @@unique([userId, serverId])
 }
 
-model Channel {
-  id       String      @id @default(uuid())
+model Category {
+  id       String @id @default(uuid())
   name     String
-  type     ChannelType @default(TEXT)
   serverId String
 
   server   Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  messages Message[]
+  channels Channel[]
+}
+
+model Role {
+  id       String  @id @default(uuid())
+  name     String
+  color    String
+  isAdmin  Boolean @default(false)
+  serverId String
+
+  server        Server              @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  memberships   MembershipRole[]
+  channelAccess ChannelRoleAccess[]
+}
+
+model MembershipRole {
+  id           String @id @default(uuid())
+  membershipId String
+  roleId       String
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, roleId])
+}
+
+model ChannelRoleAccess {
+  id        String @id @default(uuid())
+  channelId String
+  roleId    String
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  role    Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, roleId])
+}
+
+model Channel {
+  id         String      @id @default(uuid())
+  name       String
+  type       ChannelType @default(TEXT)
+  serverId   String
+  categoryId String?
+
+  server     Server              @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  category   Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  messages   Message[]
+  roleAccess ChannelRoleAccess[]
 }
 
 model Message {

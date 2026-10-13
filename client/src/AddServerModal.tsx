@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Modal } from './Modal'
-import { XIcon } from './Icon'
+import { XIcon, PlusIcon } from './Icon'
+import { resizeImageToDataUrl } from './imageUtils'
+
+const ICON_SIZE = 256
 
 const JOIN_ERROR_MESSAGES: Record<string, string> = {
   invalid_code: 'Cole um código ou link de convite válido.',
@@ -9,24 +12,29 @@ const JOIN_ERROR_MESSAGES: Record<string, string> = {
 }
 
 export function AddServerModal({
+  username,
   initialInviteCode,
   onClose,
   onJoin,
   onCreate,
 }: {
+  username: string
   initialInviteCode?: string
   onClose: () => void
   onJoin: (code: string) => Promise<void>
-  onCreate: (name: string, icon: string) => Promise<void>
+  onCreate: (name: string, icon: string, iconImage: string | null) => Promise<void>
 }) {
-  const [step, setStep] = useState<'hub' | 'customize'>('hub')
+  const [step, setStep] = useState<'hub' | 'type' | 'customize'>('hub')
   const [inviteCode, setInviteCode] = useState(initialInviteCode ?? '')
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState('')
 
-  const [name, setName] = useState('')
+  const [name, setName] = useState(`Servidor de ${username}`)
+  const [iconImage, setIconImage] = useState<string | null>(null)
+  const [imageError, setImageError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleJoin() {
     if (!inviteCode.trim() || joining) return
@@ -42,12 +50,23 @@ export function AddServerModal({
     }
   }
 
+  async function handleIconFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      setIconImage(await resizeImageToDataUrl(file, ICON_SIZE))
+      setImageError(null)
+    } catch {
+      setImageError('Não foi possível processar essa imagem.')
+    }
+  }
+
   async function handleCreate() {
     if (!name.trim() || creating) return
     setCreating(true)
     setCreateError('')
     try {
-      await onCreate(name.trim(), name.trim().slice(0, 2).toUpperCase())
+      await onCreate(name.trim(), name.trim().slice(0, 2).toUpperCase(), iconImage)
     } catch {
       setCreateError('Não foi possível criar o servidor.')
     } finally {
@@ -83,13 +102,41 @@ export function AddServerModal({
 
           <div className="modal-divider" />
 
-          <button className="add-server-option" onClick={() => setStep('customize')}>
-            <span className="add-server-option-icon">+</span>
+          <button className="add-server-option" onClick={() => setStep('type')}>
+            <span className="add-server-option-icon"><PlusIcon size={20} /></span>
             <span>
               <p className="add-server-option-title">Criar um servidor</p>
               <p className="add-server-option-desc">Um lugar seu, com os canais e as pessoas que você escolher.</p>
             </span>
           </button>
+        </div>
+      )}
+
+      {step === 'type' && (
+        <div className="add-server-modal">
+          <div className="modal-header-row">
+            <h2>Crie seu servidor</h2>
+            <button className="modal-close-btn" onClick={onClose}><XIcon size={16} /></button>
+          </div>
+          <p className="modal-section-label">Para quem é este servidor? Dá para mudar depois.</p>
+
+          <button className="add-server-type-card selected" onClick={() => setStep('customize')}>
+            <p className="add-server-option-title">Para mim e meus amigos</p>
+            <p className="add-server-option-desc">Um espaço fechado: só entra quem receber convite. Fora da Descoberta.</p>
+          </button>
+
+          <button className="add-server-type-card disabled" disabled title="Em breve">
+            <p className="add-server-option-title">
+              Para uma comunidade <span className="add-server-type-badge">Em breve</span>
+            </p>
+            <p className="add-server-option-desc">Aberto na Descoberta: qualquer pessoa encontra e entra sem convite.</p>
+          </button>
+
+          <div className="add-server-actions">
+            <button className="add-server-back-btn" onClick={() => setStep('hub')}>
+              Voltar
+            </button>
+          </div>
         </div>
       )}
 
@@ -99,7 +146,21 @@ export function AddServerModal({
             <h2>Personalize seu servidor</h2>
             <button className="modal-close-btn" onClick={onClose}><XIcon size={16} /></button>
           </div>
-          <p className="modal-section-label">Dê um nome ao seu servidor. Você pode mudar depois.</p>
+          <p className="modal-section-label">
+            Dê uma cara ao seu servidor. A foto e o nome aparecem para todo mundo que entrar.
+          </p>
+
+          <div className="add-server-icon-wrap">
+            <button
+              className="add-server-icon-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Clique para escolher uma foto"
+            >
+              {iconImage ? <img className="add-server-icon-img" src={iconImage} alt="" /> : <span>Enviar foto</span>}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleIconFileChange} />
+          </div>
+          {imageError && <p className="auth-error">{imageError}</p>}
 
           <label className="edit-label">Nome do servidor</label>
           <input
@@ -110,11 +171,12 @@ export function AddServerModal({
             placeholder="Servidor da galera"
             autoFocus
           />
+          <p className="edit-hint">Só quem tiver o convite consegue entrar.</p>
 
           {createError && <p className="auth-error">{createError}</p>}
 
           <div className="add-server-actions">
-            <button className="add-server-back-btn" onClick={() => setStep('hub')}>
+            <button className="add-server-back-btn" onClick={() => setStep('type')}>
               Voltar
             </button>
             <button className="edit-save-btn" disabled={!name.trim() || creating} onClick={handleCreate}>

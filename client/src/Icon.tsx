@@ -234,3 +234,69 @@ export function CrownIcon(props: IconProps) {
     </Base>
   )
 }
+
+export function PencilIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M17 3a2.83 2.83 0 0 1 4 4L7 21l-4 1 1-4Z" />
+    </Base>
+  )
+}
+
+export function ShieldIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M12 2 4 5v6c0 5 3.4 8.6 8 11 4.6-2.4 8-6 8-11V5Z" />
+    </Base>
+  )
+}
+
+export function FolderPlusIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+      <line x1="12" y1="12" x2="12" y2="16" />
+      <line x1="10" y1="14" x2="14" y2="14" />
+    </Base>
+  )
+}
+
+export function TrashIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </Base>
+  )
+}
+
+export function UserPlusIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="16" y1="11" x2="22" y2="11" />
+    </Base>
+  )
+}
+
+export function LockIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </Base>
+  )
+}
+
+export function GearIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09c0 .68.39 1.3 1 1.51.59.22 1.27.1 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.43.55-.55 1.23-.33 1.82.21.61.83 1 1.51 1H21a2 2 0 0 1 0 4h-.09c-.68 0-1.3.39-1.51 1Z" />
+    </Base>
+  )
+}
