@@ -12,6 +12,7 @@ import {
   ScreenShareOffIcon,
   PhoneOffIcon,
   ChevronDownIcon,
+  MaximizeIcon,
 } from './Icon'
 
 type MediaElementWithSink = HTMLVideoElement & { setSinkId?: (id: string) => Promise<void> }
@@ -83,17 +84,25 @@ function RemoteTile({
 
 function ScreenTile({ label, stream, muted }: { label: string; stream: MediaStream; muted: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.srcObject = stream
   }, [stream])
 
+  function enterFullscreen() {
+    containerRef.current?.requestFullscreen().catch(() => {})
+  }
+
   return (
-    <div className="voice-tile screen-tile">
-      <video ref={videoRef} autoPlay playsInline muted={muted} className="visible" />
+    <div className="voice-tile screen-tile" ref={containerRef}>
+      <video ref={videoRef} autoPlay playsInline muted={muted} className="visible" onDoubleClick={enterFullscreen} />
       <div className="live-badge">
         <span className="live-badge-dot" /> AO VIVO
       </div>
+      <button className="screen-tile-fullscreen-btn" onClick={enterFullscreen} title="Tela cheia">
+        <MaximizeIcon size={22} />
+      </button>
       <div className="voice-tile-label">
         <ScreenShareIcon size={13} /> {label}
       </div>
