@@ -1,11 +1,10 @@
 
 -- AlterTable
-ALTER TABLE "Channel" ADD COLUMN     "categoryId" TEXT;
+ALTER TABLE "Channel" ADD COLUMN IF NOT EXISTS "categoryId" TEXT;
 
 -- AlterTable
-ALTER TABLE "Server" ADD COLUMN     "bannerColor" TEXT,
-ADD COLUMN     "bannerImage" TEXT,
-ADD COLUMN     "iconImage" TEXT;
+ALTER TABLE "Server" ADD COLUMN IF NOT EXISTS "bannerColor" TEXT,
+ADD COLUMN IF NOT EXISTS "bannerImage" TEXT;
 
 -- CreateTable
 CREATE TABLE "Category" (

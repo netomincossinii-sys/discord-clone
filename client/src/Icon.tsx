@@ -292,6 +292,25 @@ export function LockIcon(props: IconProps) {
   )
 }
 
+export function InstagramIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </Base>
+  )
+}
+
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </Base>
+  )
+}
+
 export function GearIcon(props: IconProps) {
   return (
     <Base {...props}>

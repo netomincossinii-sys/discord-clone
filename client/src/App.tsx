@@ -13,6 +13,8 @@ import { StatusMenu } from './StatusMenu'
 import { VoiceDeviceMenu } from './VoiceDeviceMenu'
 import { SettingsModal } from './SettingsModal'
 import { FriendsView } from './FriendsView'
+import { HomeView } from './HomeView'
+import { LogoIcon } from './LogoIcon'
 import { DmSidebar } from './DmSidebar'
 import { DmChatPanel } from './DmChatPanel'
 import { DmCallRingModal } from './DmCallRingModal'
@@ -34,7 +36,7 @@ import { CrownIcon } from './Icon'
 import { Composer } from './Composer'
 import { MessageAttachment } from './MessageAttachment'
 
-type RailMode = 'servers' | 'friends' | 'dms'
+type RailMode = 'home' | 'servers' | 'friends' | 'dms'
 
 function App() {
   const [checkingSession, setCheckingSession] = useState(true)
@@ -53,7 +55,7 @@ function App() {
   const [showMicMenu, setShowMicMenu] = useState(false)
   const [showSpeakerMenu, setShowSpeakerMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const [railMode, setRailMode] = useState<RailMode>('servers')
+  const [railMode, setRailMode] = useState<RailMode>('home')
   const [friends, setFriends] = useState<FriendUser[]>([])
   const [pendingIncoming, setPendingIncoming] = useState<PendingRequest[]>([])
   const [pendingOutgoing, setPendingOutgoing] = useState<PendingRequest[]>([])
@@ -564,6 +566,17 @@ function App() {
         <div className="server-pill-wrap">
           <span className="server-pill-indicator" />
           <button
+            className={`server-pill ${railMode === 'home' ? 'active' : ''}`}
+            title="Início"
+            onClick={() => setRailMode('home')}
+          >
+            <LogoIcon size={22} />
+          </button>
+        </div>
+        <div className="rail-divider" />
+        <div className="server-pill-wrap">
+          <span className="server-pill-indicator" />
+          <button
             className={`server-pill ${railMode === 'friends' ? 'active' : ''}`}
             title="Amigos"
             onClick={() => setRailMode('friends')}
@@ -660,6 +673,12 @@ function App() {
         <div className="channel-group-label">CANAIS DE VOZ</div>
         {uncategorizedChannels.filter((c) => c.type === 'VOICE').map(renderChannelRow)}
       </aside>
+      )}
+
+      {railMode === 'home' && (
+        <div className="wide-panel" style={{ gridColumn: '2 / span 3' }}>
+          <HomeView />
+        </div>
       )}
 
       {railMode === 'friends' && (
