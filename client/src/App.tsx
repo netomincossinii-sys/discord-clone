@@ -679,48 +679,31 @@ function App() {
 
       {railMode === 'servers' && (
         <aside className="member-list">
-          <div className="channel-group-label">
-            {voice.channelId ? `NA CHAMADA — ${voice.participants.size + 1}` : `MEMBROS — ${sortedMembers.length}`}
-          </div>
-          {voice.channelId ? (
-            <>
-              <button className="member-item" onClick={() => setProfileViewUserId(user.id)}>
-                <span className="user-dot" style={{ background: user.color }} />
-                {user.username} (você)
-              </button>
-              {Array.from(voice.participants.values()).map((p) => (
-                <button className="member-item" key={p.user.id} onClick={() => setProfileViewUserId(p.user.id)}>
-                  <span className="user-dot" style={{ background: p.user.color }} />
-                  {p.user.username}
-                </button>
-              ))}
-            </>
-          ) : (
-            sortedMembers.map((member) => (
-              <button
-                className={`member-row ${member.online ? '' : 'offline'}`}
-                key={member.id}
-                onClick={() => setProfileViewUserId(member.id)}
-              >
-                <span className="member-row-avatar-wrap">
-                  {member.avatarImage ? (
-                    <img className="member-row-avatar-img" src={member.avatarImage} alt="" />
-                  ) : (
-                    <div className="member-row-avatar-fallback" style={{ background: member.color }}>
-                      {member.username.slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
-                  <span
-                    className="member-row-status-dot"
-                    style={{ background: member.online ? 'var(--color-online)' : 'var(--color-offline)' }}
-                  />
-                </span>
-                <span className="member-row-name">{member.username}</span>
-                {activeServer?.ownerId === member.id && <CrownIcon size={14} className="member-row-crown" />}
-                {connectedVoiceUserIds.has(member.id) && <MicIcon size={14} className="member-row-voice-icon" />}
-              </button>
-            ))
-          )}
+          <div className="channel-group-label">MEMBROS — {sortedMembers.length}</div>
+          {sortedMembers.map((member) => (
+            <button
+              className={`member-row ${member.online ? '' : 'offline'}`}
+              key={member.id}
+              onClick={() => setProfileViewUserId(member.id)}
+            >
+              <span className="member-row-avatar-wrap">
+                {member.avatarImage ? (
+                  <img className="member-row-avatar-img" src={member.avatarImage} alt="" />
+                ) : (
+                  <div className="member-row-avatar-fallback" style={{ background: member.color }}>
+                    {member.username.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <span
+                  className="member-row-status-dot"
+                  style={{ background: member.online ? 'var(--color-online)' : 'var(--color-offline)' }}
+                />
+              </span>
+              <span className="member-row-name">{member.username}</span>
+              {activeServer?.ownerId === member.id && <CrownIcon size={14} className="member-row-crown" />}
+              {connectedVoiceUserIds.has(member.id) && <MicIcon size={14} className="member-row-voice-icon" />}
+            </button>
+          ))}
         </aside>
       )}
 
