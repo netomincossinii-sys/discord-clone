@@ -63,9 +63,10 @@ function App() {
   const [inviteModalServerId, setInviteModalServerId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const localVoiceUser: PresenceUser | null = user
-    ? { id: user.id, username: user.username, color: user.color, avatarImage: myAvatar }
-    : null
+  const localVoiceUser: PresenceUser | null = useMemo(
+    () => (user ? { id: user.id, username: user.username, color: user.color, avatarImage: myAvatar } : null),
+    [user, myAvatar]
+  )
   const voice = useVoice(socket, localVoiceUser)
   const voiceRef = useRef(voice)
   useEffect(() => {

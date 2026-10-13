@@ -494,6 +494,21 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       })
     }
 
+    socket.on('voice:peers', handlePeers)
+    socket.on('voice:peer-joined', handlePeerJoined)
+    socket.on('voice:signal', handleSignal)
+    socket.on('voice:peer-left', handlePeerLeft)
+    return () => {
+      socket.off('voice:peers', handlePeers)
+      socket.off('voice:peer-joined', handlePeerJoined)
+      socket.off('voice:signal', handleSignal)
+      socket.off('voice:peer-left', handlePeerLeft)
+    }
+  }, [socket, localUser, createPeerConnection, renegotiate])
+
+  useEffect(() => {
+    if (!socket) return
+
     const handleSnapshot = (channels: { channelId: string; users: PresenceUser[] }[]) => {
       setChannelPresence(new Map(channels.map((c) => [c.channelId, c.users])))
     }
@@ -502,21 +517,13 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       setChannelPresence((prev) => new Map(prev).set(channelId, users))
     }
 
-    socket.on('voice:peers', handlePeers)
-    socket.on('voice:peer-joined', handlePeerJoined)
-    socket.on('voice:signal', handleSignal)
-    socket.on('voice:peer-left', handlePeerLeft)
     socket.on('voice:snapshot', handleSnapshot)
     socket.on('voice:channel-update', handleChannelUpdate)
     return () => {
-      socket.off('voice:peers', handlePeers)
-      socket.off('voice:peer-joined', handlePeerJoined)
-      socket.off('voice:signal', handleSignal)
-      socket.off('voice:peer-left', handlePeerLeft)
       socket.off('voice:snapshot', handleSnapshot)
       socket.off('voice:channel-update', handleChannelUpdate)
     }
-  }, [socket, localUser, createPeerConnection, renegotiate])
+  }, [socket])
 
   useEffect(() => () => leave(), [leave])
 
