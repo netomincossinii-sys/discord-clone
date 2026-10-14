@@ -3211,6 +3211,10 @@ body {
   cursor: not-allowed;
 }
 
+.share-screen-audio-row {
+  margin-top: 4px;
+}
+
 .add-server-type-badge {
   font-size: 11px;
   font-weight: 700;

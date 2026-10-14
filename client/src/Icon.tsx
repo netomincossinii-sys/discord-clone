@@ -412,3 +412,44 @@ export function GearIcon(props: IconProps) {
     </Base>
   )
 }
+
+export function MonitorIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </Base>
+  )
+}
+
+export function AppWindowIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <line x1="2" y1="9" x2="22" y2="9" />
+      <line x1="6" y1="6.5" x2="6.01" y2="6.5" />
+      <line x1="9" y1="6.5" x2="9.01" y2="6.5" />
+    </Base>
+  )
+}
+
+export function BrowserTabIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M2 8h6l1.3-2.5" />
+      <line x1="8" y1="8" x2="22" y2="8" />
+    </Base>
+  )
+}
+
+export function Volume2Icon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <polygon points="4 9 8 9 12 5 12 19 8 15 4 15 4 9" />
+      <path d="M16 8a5 5 0 0 1 0 8" />
+      <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+    </Base>
+  )
+}

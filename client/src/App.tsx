@@ -10,6 +10,7 @@ import { VoiceStage } from './VoiceStage'
 import { ConnectedVoiceBar } from './ConnectedVoiceBar'
 import { VoiceAudioSink } from './VoiceAudioSink'
 import { useVoice } from './useVoice'
+import { ShareScreenModal, type DisplaySurface } from './ShareScreenModal'
 import { ProfileCard, type FriendRelationship, type ProfileServerContext } from './ProfileCard'
 import { EditProfileModal } from './EditProfileModal'
 import { StatusMenu } from './StatusMenu'
@@ -87,6 +88,7 @@ function App() {
   const [showCreateCategory, setShowCreateCategory] = useState(false)
   const [showRoles, setShowRoles] = useState(false)
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null)
+  const [showShareScreen, setShowShareScreen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const localVoiceUser: PresenceUser | null = useMemo(
@@ -589,6 +591,19 @@ function App() {
     if (activeDmConversationId === conversationId) setActiveDmConversationId(null)
   }
 
+  function handleToggleScreenShare() {
+    if (voice.isSharingScreen) {
+      voice.stopScreenShare()
+    } else {
+      setShowShareScreen(true)
+    }
+  }
+
+  function handleConfirmShareScreen(options: { displaySurface: DisplaySurface; audio: boolean }) {
+    setShowShareScreen(false)
+    voice.startScreenShare(options)
+  }
+
   function sendDmMessage(attachment: Attachment | null) {
     if (!socket || !activeDmConversationId) return
     if (!dmDraft.trim() && !attachment) return
@@ -898,7 +913,7 @@ function App() {
             onToggleMic={voice.toggleMic}
             onToggleCam={voice.toggleCam}
             onToggleDeafen={voice.toggleDeafen}
-            onToggleScreenShare={voice.toggleScreenShare}
+            onToggleScreenShare={handleToggleScreenShare}
             onSelectMicDevice={voice.selectMicDevice}
             onSelectCameraDevice={voice.selectCameraDevice}
             onOpenSettings={() => openSettings()}
@@ -937,7 +952,7 @@ function App() {
           onToggleMic={voice.toggleMic}
           onToggleCam={voice.toggleCam}
           onToggleDeafen={voice.toggleDeafen}
-          onToggleScreenShare={voice.toggleScreenShare}
+          onToggleScreenShare={handleToggleScreenShare}
           onSelectMicDevice={voice.selectMicDevice}
           onSelectCameraDevice={voice.selectCameraDevice}
           onOpenSettings={() => openSettings()}
@@ -1038,7 +1053,7 @@ function App() {
               onToggleMic={voice.toggleMic}
               onToggleDeafen={voice.toggleDeafen}
               onToggleCam={voice.toggleCam}
-              onToggleScreenShare={voice.toggleScreenShare}
+              onToggleScreenShare={handleToggleScreenShare}
               onDisconnect={voice.leave}
             />
           </div>
@@ -1240,6 +1255,10 @@ function App() {
           onUpdateRole={(roleId, update) => handleUpdateRole(activeServer.id, roleId, update)}
           onDeleteRole={(roleId) => handleDeleteRole(activeServer.id, roleId)}
         />
+      )}
+
+      {showShareScreen && (
+        <ShareScreenModal onClose={() => setShowShareScreen(false)} onConfirm={handleConfirmShareScreen} />
       )}
 
       {editingChannelId &&

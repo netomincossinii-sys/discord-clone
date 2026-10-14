@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "/Users/neto/Pessoal/discord-clone/client", "run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "callfy-server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "/Users/neto/Pessoal/discord-clone/server", "run", "dev"],
+      "port": 4001
     }
   ]
 }

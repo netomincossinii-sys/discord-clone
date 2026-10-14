@@ -410,10 +410,13 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     setIsSharingScreen(false)
   }, [renegotiate])
 
-  const startScreenShare = useCallback(async () => {
+  const startScreenShare = useCallback(async (options?: { displaySurface?: 'monitor' | 'window' | 'browser'; audio?: boolean }) => {
     if (screenStreamRef.current) return
     try {
-      const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+      const video: MediaTrackConstraints | boolean = options?.displaySurface
+        ? { displaySurface: options.displaySurface }
+        : true
+      const display = await navigator.mediaDevices.getDisplayMedia({ video, audio: options?.audio ?? true })
       screenStreamRef.current = display
       display.getVideoTracks()[0]?.addEventListener('ended', () => stopScreenShare())
       pcs.current.forEach((pc, peerId) => {
@@ -581,6 +584,8 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     toggleMic,
     toggleCam,
     toggleScreenShare,
+    startScreenShare,
+    stopScreenShare,
     toggleDeafen,
     selectMicDevice,
     selectSpeakerDevice,
