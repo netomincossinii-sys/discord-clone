@@ -155,10 +155,11 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     }
     pc.ontrack = (event) => {
       const incomingStream = event.streams[0]
+      const mainStreamId = peerMainStreamId.current.get(peerId)
+      const isScreenStream = !!mainStreamId && incomingStream.id !== mainStreamId
       setParticipants((prev) => {
         const next = new Map(prev)
         const existing = next.get(peerId) ?? { user }
-        const mainStreamId = peerMainStreamId.current.get(peerId)
         if (!mainStreamId) {
           peerMainStreamId.current.set(peerId, incomingStream.id)
           next.set(peerId, { ...existing, stream: incomingStream })
@@ -171,6 +172,19 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
         }
         return next
       })
+      if (isScreenStream) {
+        const clearScreenStream = () => {
+          setParticipants((prev) => {
+            const current = prev.get(peerId)
+            if (!current || current.screenStream?.id !== incomingStream.id) return prev
+            const next = new Map(prev)
+            next.set(peerId, { ...current, screenStream: undefined })
+            return next
+          })
+        }
+        event.track.addEventListener('ended', clearScreenStream)
+        incomingStream.addEventListener('removetrack', clearScreenStream)
+      }
     }
     pcs.current.set(peerId, pc)
     return pc
