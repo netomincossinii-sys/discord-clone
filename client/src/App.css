@@ -3245,3 +3245,37 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.update-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-bg-600);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-bg-500);
+}
+
+.update-toast button {
+  background: var(--color-accent);
+  border: none;
+  color: #fff;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.update-toast button:hover {
+  background: var(--color-accent-hover);
+}
