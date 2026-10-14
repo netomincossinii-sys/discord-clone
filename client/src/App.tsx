@@ -442,6 +442,12 @@ function App() {
   function selectServer(server: ServerInfo) {
     setRailMode('servers')
     setActiveServerId(server.id)
+    const connectedChannelHere = server.channels.some((c) => c.id === voice.channelId) ? voice.channelId : null
+    if (connectedChannelHere) {
+      setActiveChannelId(connectedChannelHere)
+      return
+    }
+    if (server.id === activeServerId) return
     const firstText = server.channels.find((c) => c.type === 'TEXT')
     setActiveChannelId(firstText?.id ?? server.channels[0]?.id ?? null)
   }
