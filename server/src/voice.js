@@ -16,6 +16,14 @@ export function getChannelPresence(channelId) {
   return presenceList(channelId).map(({ user }) => user);
 }
 
+export function forceLeaveChannel(io, channelId) {
+  for (const socket of io.sockets.sockets.values()) {
+    if (socket.data.voiceChannelId === channelId) {
+      socket.emit("voice:channel_deleted", { channelId });
+    }
+  }
+}
+
 export function forceMoveUser(io, userId, serverId, channelId) {
   for (const socket of io.sockets.sockets.values()) {
     if (socket.data.userId === userId && socket.data.voiceServerId === serverId && socket.data.voiceChannelId) {

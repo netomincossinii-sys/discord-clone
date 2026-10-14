@@ -2934,6 +2934,10 @@ body {
   margin-top: 20px;
 }
 
+.channel-delete-btn {
+  margin-top: 16px;
+}
+
 .add-server-back-btn {
   padding: 10px 16px;
   border-radius: 8px;

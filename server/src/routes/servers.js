@@ -3,7 +3,7 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { generateInviteCode, inviteExpiresAt, isInviteExpired, isServerManager } from "../data.js";
 import { emitToUser } from "../presence.js";
-import { forceMoveUser } from "../voice.js";
+import { forceMoveUser, forceLeaveChannel } from "../voice.js";
 
 const MAX_ICON_BASE64_LENGTH = 600_000; // ~450KB decoded, generous for a small square icon
 const MAX_BANNER_BASE64_LENGTH = 1_500_000; // ~1.1MB decoded, generous for a wide banner
@@ -219,6 +219,19 @@ export function serversRouter(io) {
       }
     });
 
+    notifyServerUpdated(req.params.id);
+    res.json({ ok: true });
+  });
+
+  router.delete("/servers/:id/channels/:channelId", requireAuth, requireManager, async (req, res) => {
+    const channel = await prisma.channel.findFirst({ where: { id: req.params.channelId, serverId: req.params.id } });
+    if (!channel) return res.status(404).json({ error: "not_found" });
+
+    const channelCount = await prisma.channel.count({ where: { serverId: req.params.id } });
+    if (channelCount <= 1) return res.status(400).json({ error: "last_channel" });
+
+    await prisma.channel.delete({ where: { id: channel.id } });
+    if (channel.type === "VOICE") forceLeaveChannel(io, channel.id);
     notifyServerUpdated(req.params.id);
     res.json({ ok: true });
   });

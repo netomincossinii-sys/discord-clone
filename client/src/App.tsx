@@ -236,6 +236,9 @@ function App() {
         setRailMode('servers')
       }
     })
+    s.on('voice:channel_deleted', ({ channelId }: { channelId: string }) => {
+      if (voiceRef.current?.channelId === channelId) voiceRef.current.leave()
+    })
     s.on('server:kicked', ({ serverId, serverName }: { serverId: string; serverName: string }) => {
       const kickedServer = serversRef.current.find((srv) => srv.id === serverId)
       if (voiceRef.current?.channelId && kickedServer?.channels.some((c) => c.id === voiceRef.current?.channelId)) {
@@ -262,6 +265,12 @@ function App() {
     () => activeServer?.channels.find((c) => c.id === activeChannelId) ?? null,
     [activeServer, activeChannelId],
   )
+
+  useEffect(() => {
+    if (!activeServer) return
+    if (activeChannelId && activeServer.channels.some((c) => c.id === activeChannelId)) return
+    setActiveChannelId(activeServer.channels[0]?.id ?? null)
+  }, [activeServer, activeChannelId])
   const activeMessages = (activeChannelId ? messagesByChannel[activeChannelId] ?? [] : []).filter(
     (m) => !blockedIds.has(m.authorId),
   )
@@ -468,6 +477,11 @@ function App() {
 
   async function handleUpdateChannel(serverId: string, channelId: string, update: { name: string; roleIds: string[] }) {
     await api.updateChannel(serverId, channelId, update)
+    await refreshServers()
+  }
+
+  async function handleDeleteChannel(serverId: string, channelId: string) {
+    await api.deleteChannel(serverId, channelId)
     await refreshServers()
   }
 
@@ -1200,6 +1214,7 @@ function App() {
           roles={activeServer.roles}
           onClose={() => setEditingChannelId(null)}
           onSave={(update) => handleUpdateChannel(activeServer.id, editingChannelId, update)}
+          onDelete={() => handleDeleteChannel(activeServer.id, editingChannelId)}
         />
       )}
     </div>

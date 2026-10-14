@@ -7,15 +7,18 @@ export function ChannelSettingsModal({
   roles,
   onClose,
   onSave,
+  onDelete,
 }: {
   channel: Channel
   roles: ServerRole[]
   onClose: () => void
   onSave: (update: { name: string; roleIds: string[] }) => Promise<void>
+  onDelete: () => Promise<void>
 }) {
   const [name, setName] = useState(channel.name)
   const [roleIds, setRoleIds] = useState<string[]>(channel.roleIds)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function toggleRole(roleId: string) {
@@ -33,6 +36,26 @@ export function ChannelSettingsModal({
       setError('Não foi possível salvar o canal.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (deleting) return
+    const kind = channel.type === 'VOICE' ? 'canal de voz' : 'canal de texto'
+    if (!window.confirm(`Excluir o ${kind} "${channel.name}"? Essa ação não pode ser desfeita.`)) return
+    setDeleting(true)
+    setError(null)
+    try {
+      await onDelete()
+      onClose()
+    } catch (err) {
+      const code = err instanceof Error ? err.message : 'unknown'
+      setError(
+        code === 'last_channel'
+          ? 'Esse é o único canal do servidor — não dá pra excluir.'
+          : 'Não foi possível excluir o canal.',
+      )
+      setDeleting(false)
     }
   }
 
@@ -71,6 +94,10 @@ export function ChannelSettingsModal({
             {saving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
+
+        <button className="profile-danger-btn channel-delete-btn" disabled={deleting} onClick={handleDelete}>
+          {deleting ? 'Excluindo...' : 'Excluir canal'}
+        </button>
       </div>
     </Modal>
   )

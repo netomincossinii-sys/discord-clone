@@ -114,6 +114,10 @@ export function updateChannel(
   })
 }
 
+export function deleteChannel(serverId: string, channelId: string) {
+  return request<{ ok: true }>(`/api/servers/${serverId}/channels/${channelId}`, { method: 'DELETE' })
+}
+
 export function createCategory(serverId: string, name: string) {
   return request<{ category: import('./types').Category }>(`/api/servers/${serverId}/categories`, {
     method: 'POST',
