@@ -5,6 +5,7 @@ import * as api from './api'
 import type { AuthUser } from './api'
 import { AuthScreen } from './AuthScreen'
 import { SplashScreen } from './SplashScreen'
+import { useConfirm } from './ConfirmDialog'
 import { VoiceStage } from './VoiceStage'
 import { ConnectedVoiceBar } from './ConnectedVoiceBar'
 import { useVoice } from './useVoice'
@@ -41,6 +42,7 @@ import { MessageAttachment } from './MessageAttachment'
 type RailMode = 'home' | 'servers' | 'friends' | 'dms'
 
 function App() {
+  const { confirm, ConfirmDialog } = useConfirm()
   const [checkingSession, setCheckingSession] = useState(true)
   const [showSplash, setShowSplash] = useState(true)
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -518,7 +520,13 @@ function App() {
     const message = isOwner
       ? `Deletar o servidor "${server.name}"? Essa ação não pode ser desfeita.`
       : `Sair do servidor "${server.name}"?`
-    if (!window.confirm(message)) return
+    const ok = await confirm({
+      title: isOwner ? 'Deletar servidor' : 'Sair do servidor',
+      message,
+      confirmLabel: isOwner ? 'Deletar' : 'Sair',
+      danger: true,
+    })
+    if (!ok) return
 
     if (isOwner) await api.deleteServer(server.id)
     else await api.leaveServer(server.id)
@@ -1208,15 +1216,22 @@ function App() {
         />
       )}
 
-      {editingChannelId && activeServer && (
-        <ChannelSettingsModal
-          channel={activeServer.channels.find((c) => c.id === editingChannelId)!}
-          roles={activeServer.roles}
-          onClose={() => setEditingChannelId(null)}
-          onSave={(update) => handleUpdateChannel(activeServer.id, editingChannelId, update)}
-          onDelete={() => handleDeleteChannel(activeServer.id, editingChannelId)}
-        />
-      )}
+      {editingChannelId &&
+        activeServer &&
+        (() => {
+          const editingChannel = activeServer.channels.find((c) => c.id === editingChannelId)
+          if (!editingChannel) return null
+          return (
+            <ChannelSettingsModal
+              channel={editingChannel}
+              roles={activeServer.roles}
+              onClose={() => setEditingChannelId(null)}
+              onSave={(update) => handleUpdateChannel(activeServer.id, editingChannelId, update)}
+              onDelete={() => handleDeleteChannel(activeServer.id, editingChannelId)}
+            />
+          )
+        })()}
+      {ConfirmDialog}
     </div>
   )
 }

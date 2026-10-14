@@ -2327,6 +2327,21 @@ body {
   background: var(--color-accent-hover);
 }
 
+.edit-save-btn.danger {
+  background: var(--color-danger);
+}
+
+.edit-save-btn.danger:hover {
+  background: #b7282c;
+}
+
+.confirm-dialog-message {
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
 .rail-divider {
   width: 32px;
   height: 2px;

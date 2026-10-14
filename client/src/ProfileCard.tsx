@@ -4,6 +4,7 @@ import type { Profile } from './api'
 import { STATUS_META } from './api'
 import type { Section as SettingsSection } from './SettingsModal'
 import { Modal } from './Modal'
+import { useConfirm } from './ConfirmDialog'
 import {
   RocketIcon,
   BellIcon,
@@ -88,6 +89,7 @@ export function ProfileCard({
   onMoveMemberVoice?: (userId: string, channelId: string) => void
   onKickMember?: (userId: string) => void
 }) {
+  const { confirm, ConfirmDialog } = useConfirm()
   const [profile, setProfile] = useState<Profile | null>(null)
   const elapsed = useElapsed(profile?.activityStartedAt ?? null)
   const [showRoleEditor, setShowRoleEditor] = useState(false)
@@ -202,16 +204,18 @@ export function ProfileCard({
 
                 <button
                   className="profile-danger-btn"
-                  onClick={() => {
+                  onClick={async () => {
                     if (isBlocked) {
                       onUnblock?.(userId)
-                    } else if (
-                      window.confirm(
-                        `Bloquear ${profile.username}? Essa pessoa não vai conseguir te mandar mensagem nem pedido de amizade, e as mensagens dela ficam escondidas nos servidores em comum.`,
-                      )
-                    ) {
-                      onBlock?.(userId)
+                      return
                     }
+                    const ok = await confirm({
+                      title: 'Bloquear usuário',
+                      message: `Bloquear ${profile.username}? Essa pessoa não vai conseguir te mandar mensagem nem pedido de amizade, e as mensagens dela ficam escondidas nos servidores em comum.`,
+                      confirmLabel: 'Bloquear',
+                      danger: true,
+                    })
+                    if (ok) onBlock?.(userId)
                   }}
                 >
                   <BanIcon size={16} /> {isBlocked ? 'Desbloquear' : 'Bloquear'}
@@ -283,8 +287,14 @@ export function ProfileCard({
 
                     <button
                       className="profile-danger-btn"
-                      onClick={() => {
-                        if (window.confirm(`Expulsar ${profile.username} do servidor?`)) onKickMember?.(userId)
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: 'Expulsar do servidor',
+                          message: `Expulsar ${profile.username} do servidor?`,
+                          confirmLabel: 'Expulsar',
+                          danger: true,
+                        })
+                        if (ok) onKickMember?.(userId)
                       }}
                     >
                       <UserXIcon size={16} /> Expulsar do servidor
@@ -296,6 +306,7 @@ export function ProfileCard({
           </div>
         </div>
       )}
+      {ConfirmDialog}
     </Modal>
   )
 }

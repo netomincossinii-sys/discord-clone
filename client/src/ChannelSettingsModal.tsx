@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Modal } from './Modal'
+import { useConfirm } from './ConfirmDialog'
 import type { Channel, ServerRole } from './types'
 
 export function ChannelSettingsModal({
@@ -15,6 +16,7 @@ export function ChannelSettingsModal({
   onSave: (update: { name: string; roleIds: string[] }) => Promise<void>
   onDelete: () => Promise<void>
 }) {
+  const { confirm, ConfirmDialog } = useConfirm()
   const [name, setName] = useState(channel.name)
   const [roleIds, setRoleIds] = useState<string[]>(channel.roleIds)
   const [saving, setSaving] = useState(false)
@@ -42,7 +44,13 @@ export function ChannelSettingsModal({
   async function handleDelete() {
     if (deleting) return
     const kind = channel.type === 'VOICE' ? 'canal de voz' : 'canal de texto'
-    if (!window.confirm(`Excluir o ${kind} "${channel.name}"? Essa ação não pode ser desfeita.`)) return
+    const ok = await confirm({
+      title: 'Excluir canal',
+      message: `Excluir o ${kind} "${channel.name}"? Essa ação não pode ser desfeita.`,
+      confirmLabel: 'Excluir',
+      danger: true,
+    })
+    if (!ok) return
     setDeleting(true)
     setError(null)
     try {
@@ -99,6 +107,7 @@ export function ChannelSettingsModal({
           {deleting ? 'Excluindo...' : 'Excluir canal'}
         </button>
       </div>
+      {ConfirmDialog}
     </Modal>
   )
 }
