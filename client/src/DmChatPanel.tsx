@@ -55,7 +55,7 @@ export function DmChatPanel({
       </header>
       <div className="messages" ref={scrollRef}>
         {messages.map((m) => (
-          <div className="message-row" key={m.id}>
+          <div className={`message-row dm-message-row ${m.senderId !== conversation.user.id ? 'own' : ''}`} key={m.id}>
             <button className="avatar" style={{ background: m.senderColor }} onClick={() => onOpenProfile(m.senderId)}>
               {m.senderAvatar ? <img className="avatar-img" src={m.senderAvatar} alt="" /> : m.senderName.slice(0, 1).toUpperCase()}
             </button>

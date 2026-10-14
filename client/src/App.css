@@ -1010,6 +1010,18 @@ body {
   word-break: break-word;
 }
 
+.dm-message-row.own {
+  flex-direction: row-reverse;
+}
+
+.dm-message-row.own .message-meta {
+  justify-content: flex-end;
+}
+
+.dm-message-row.own .message-content {
+  text-align: right;
+}
+
 .empty-hint {
   color: var(--color-offline);
   text-align: center;
