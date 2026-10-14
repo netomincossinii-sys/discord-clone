@@ -16,8 +16,6 @@ import {
   MinimizeIcon,
 } from './Icon'
 
-type MediaElementWithSink = HTMLVideoElement & { setSinkId?: (id: string) => Promise<void> }
-
 function bannerStyle(color: string): React.CSSProperties {
   return { background: `linear-gradient(160deg, ${color}66 0%, ${color}22 45%, var(--color-bg-900) 85%)` }
 }
@@ -74,15 +72,11 @@ function RemoteTile({
   peerId,
   user,
   stream,
-  deafened,
-  speakerDeviceId,
   speaking,
 }: {
   peerId: string
   user: PresenceUser
   stream?: MediaStream
-  deafened: boolean
-  speakerDeviceId: string | null
   speaking: boolean
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -93,13 +87,6 @@ function RemoteTile({
     }
   }, [stream])
 
-  useEffect(() => {
-    const el = videoRef.current as MediaElementWithSink | null
-    if (el && speakerDeviceId && el.setSinkId) {
-      el.setSinkId(speakerDeviceId).catch(() => {})
-    }
-  }, [speakerDeviceId])
-
   const hasVideo = (stream?.getVideoTracks().length ?? 0) > 0
 
   return (
@@ -108,7 +95,8 @@ function RemoteTile({
       style={hasVideo ? undefined : bannerStyle(user.color)}
       key={peerId}
     >
-      <video ref={videoRef} autoPlay playsInline muted={deafened} className={hasVideo ? 'visible' : 'hidden'} />
+      {/* audio for this peer is played by the always-mounted VoiceAudioSink, not here, so it keeps playing while this tile is unmounted */}
+      <video ref={videoRef} autoPlay playsInline muted className={hasVideo ? 'visible' : 'hidden'} />
       {!hasVideo &&
         (user.avatarImage ? (
           <img className="voice-avatar-img" src={user.avatarImage} alt="" />
@@ -128,13 +116,11 @@ function RemoteTile({
 function ScreenTile({
   label,
   stream,
-  muted,
   focused,
   onToggleFocus,
 }: {
   label: string
   stream: MediaStream
-  muted: boolean
   focused: boolean
   onToggleFocus: () => void
 }) {
@@ -146,7 +132,8 @@ function ScreenTile({
 
   return (
     <div className={`voice-tile screen-tile ${focused ? 'focused' : ''}`}>
-      <video ref={videoRef} autoPlay playsInline muted={muted} className="visible" onDoubleClick={onToggleFocus} />
+      {/* audio (if the shared stream has any) is played by the always-mounted VoiceAudioSink, not here */}
+      <video ref={videoRef} autoPlay playsInline muted className="visible" onDoubleClick={onToggleFocus} />
       <div className="live-badge">
         <span className="live-badge-dot" /> AO VIVO
       </div>
@@ -172,7 +159,6 @@ export function VoiceStage({
   micOn,
   deafened,
   micDeviceId,
-  speakerDeviceId,
   cameraDeviceId,
   screenStream,
   isSharingScreen,
@@ -195,7 +181,6 @@ export function VoiceStage({
   micOn: boolean
   deafened: boolean
   micDeviceId: string | null
-  speakerDeviceId: string | null
   cameraDeviceId: string | null
   screenStream: MediaStream | null
   isSharingScreen: boolean
@@ -215,11 +200,11 @@ export function VoiceStage({
   const [showCamMenu, setShowCamMenu] = useState(false)
   const [focusedKey, setFocusedKey] = useState<string | null>(null)
 
-  const screenTiles: { key: string; label: string; stream: MediaStream; muted: boolean }[] = []
-  if (screenStream) screenTiles.push({ key: 'local-screen', label: 'Sua tela', stream: screenStream, muted: true })
+  const screenTiles: { key: string; label: string; stream: MediaStream }[] = []
+  if (screenStream) screenTiles.push({ key: 'local-screen', label: 'Sua tela', stream: screenStream })
   participants.forEach((p, peerId) => {
     if (p.screenStream) {
-      screenTiles.push({ key: `${peerId}-screen`, label: p.user.username, stream: p.screenStream, muted: deafened })
+      screenTiles.push({ key: `${peerId}-screen`, label: p.user.username, stream: p.screenStream })
     }
   })
   const screenKeysSignature = screenTiles.map((t) => t.key).join(',')
@@ -246,15 +231,7 @@ export function VoiceStage({
         speaking={speakingPeers.has('local')}
       />
       {Array.from(participants.entries()).map(([peerId, p]) => (
-        <RemoteTile
-          key={peerId}
-          peerId={peerId}
-          user={p.user}
-          stream={p.stream}
-          deafened={deafened}
-          speakerDeviceId={speakerDeviceId}
-          speaking={speakingPeers.has(peerId)}
-        />
+        <RemoteTile key={peerId} peerId={peerId} user={p.user} stream={p.stream} speaking={speakingPeers.has(peerId)} />
       ))}
     </>
   )
@@ -269,7 +246,6 @@ export function VoiceStage({
             <ScreenTile
               label={focusedTile.label}
               stream={focusedTile.stream}
-              muted={focusedTile.muted}
               focused
               onToggleFocus={() => toggleFocus(focusedTile.key)}
             />
@@ -283,7 +259,6 @@ export function VoiceStage({
                   key={t.key}
                   label={t.label}
                   stream={t.stream}
-                  muted={t.muted}
                   focused={false}
                   onToggleFocus={() => toggleFocus(t.key)}
                 />
@@ -298,7 +273,6 @@ export function VoiceStage({
               key={t.key}
               label={t.label}
               stream={t.stream}
-              muted={t.muted}
               focused={false}
               onToggleFocus={() => toggleFocus(t.key)}
             />

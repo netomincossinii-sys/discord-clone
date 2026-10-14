@@ -8,6 +8,7 @@ import { SplashScreen } from './SplashScreen'
 import { useConfirm } from './ConfirmDialog'
 import { VoiceStage } from './VoiceStage'
 import { ConnectedVoiceBar } from './ConnectedVoiceBar'
+import { VoiceAudioSink } from './VoiceAudioSink'
 import { useVoice } from './useVoice'
 import { ProfileCard, type FriendRelationship, type ProfileServerContext } from './ProfileCard'
 import { EditProfileModal } from './EditProfileModal'
@@ -868,7 +869,6 @@ function App() {
             micOn={voice.micOn}
             deafened={voice.deafened}
             micDeviceId={voice.micDeviceId}
-            speakerDeviceId={voice.speakerDeviceId}
             cameraDeviceId={voice.cameraDeviceId}
             screenStream={voice.screenStream}
             isSharingScreen={voice.isSharingScreen}
@@ -908,7 +908,6 @@ function App() {
           micOn={voice.micOn}
           deafened={voice.deafened}
           micDeviceId={voice.micDeviceId}
-          speakerDeviceId={voice.speakerDeviceId}
           cameraDeviceId={voice.cameraDeviceId}
           screenStream={voice.screenStream}
           isSharingScreen={voice.isSharingScreen}
@@ -1007,21 +1006,28 @@ function App() {
       )}
 
       {voice.channelId && (
-        <div className="connected-voice-bar-fixed">
-          <ConnectedVoiceBar
-            label={voiceBarLabel()}
-            micOn={voice.micOn}
+        <>
+          <div className="connected-voice-bar-fixed">
+            <ConnectedVoiceBar
+              label={voiceBarLabel()}
+              micOn={voice.micOn}
+              deafened={voice.deafened}
+              camOn={voice.camOn}
+              isSharingScreen={voice.isSharingScreen}
+              onOpenView={jumpToVoiceChannel}
+              onToggleMic={voice.toggleMic}
+              onToggleDeafen={voice.toggleDeafen}
+              onToggleCam={voice.toggleCam}
+              onToggleScreenShare={voice.toggleScreenShare}
+              onDisconnect={voice.leave}
+            />
+          </div>
+          <VoiceAudioSink
+            participants={voice.participants}
             deafened={voice.deafened}
-            camOn={voice.camOn}
-            isSharingScreen={voice.isSharingScreen}
-            onOpenView={jumpToVoiceChannel}
-            onToggleMic={voice.toggleMic}
-            onToggleDeafen={voice.toggleDeafen}
-            onToggleCam={voice.toggleCam}
-            onToggleScreenShare={voice.toggleScreenShare}
-            onDisconnect={voice.leave}
+            speakerDeviceId={voice.speakerDeviceId}
           />
-        </div>
+        </>
       )}
 
       <div className="user-footer-fixed">
