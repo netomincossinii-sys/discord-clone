@@ -901,6 +901,7 @@ body {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  height: 100%;
 }
 
 .chat-header {
@@ -1363,6 +1364,7 @@ body {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  height: 100%;
   background: var(--color-bg-700);
 }
 

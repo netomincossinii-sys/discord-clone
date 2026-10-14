@@ -866,7 +866,7 @@ function App() {
       )}
 
       {railMode === 'dms' && voice.channelId === `dm:${activeDmConversationId}` ? (
-        <div style={{ gridColumn: '3 / span 2' }}>
+        <div className="wide-panel" style={{ gridColumn: '3 / span 2' }}>
           <VoiceStage
             channelName={dmConversations.find((c) => c.id === activeDmConversationId)?.user.username ?? ''}
             localUser={localVoiceUser!}
@@ -892,7 +892,7 @@ function App() {
           />
         </div>
       ) : railMode === 'dms' ? (
-        <div style={{ gridColumn: '3 / span 2' }}>
+        <div className="wide-panel" style={{ gridColumn: '3 / span 2' }}>
           <DmChatPanel
             conversation={dmConversations.find((c) => c.id === activeDmConversationId) ?? null}
             messages={activeDmConversationId ? dmMessagesByConversation[activeDmConversationId] ?? [] : []}
