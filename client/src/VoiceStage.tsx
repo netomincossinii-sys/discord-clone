@@ -13,6 +13,7 @@ import {
   PhoneOffIcon,
   ChevronDownIcon,
   MaximizeIcon,
+  MinimizeIcon,
 } from './Icon'
 
 type MediaElementWithSink = HTMLVideoElement & { setSinkId?: (id: string) => Promise<void> }
@@ -25,6 +26,48 @@ function TileStatusIcons({ micOn, deafened }: { micOn?: boolean; deafened?: bool
   if (deafened) return <HeadphonesOffIcon size={13} />
   if (micOn === false) return <MicOffIcon size={13} />
   return null
+}
+
+function LocalTile({
+  localUser,
+  localStream,
+  camOn,
+  micOn,
+  deafened,
+  speaking,
+}: {
+  localUser: PresenceUser
+  localStream: MediaStream | null
+  camOn: boolean
+  micOn: boolean
+  deafened: boolean
+  speaking: boolean
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (videoRef.current && localStream) {
+      videoRef.current.srcObject = localStream
+    }
+  }, [localStream])
+
+  return (
+    <div className={`voice-tile ${speaking ? 'speaking' : ''}`} style={camOn ? undefined : bannerStyle(localUser.color)}>
+      <video ref={videoRef} autoPlay playsInline muted className={camOn ? 'visible' : 'hidden'} />
+      {!camOn &&
+        (localUser.avatarImage ? (
+          <img className="voice-avatar-img" src={localUser.avatarImage} alt="" />
+        ) : (
+          <div className="voice-avatar" style={{ background: localUser.color }}>
+            {localUser.username.slice(0, 1).toUpperCase()}
+          </div>
+        ))}
+      <div className="voice-tile-label">
+        {localUser.username} (você)
+        <TileStatusIcons micOn={micOn} deafened={deafened} />
+      </div>
+    </div>
+  )
 }
 
 function RemoteTile({
@@ -82,26 +125,37 @@ function RemoteTile({
   )
 }
 
-function ScreenTile({ label, stream, muted }: { label: string; stream: MediaStream; muted: boolean }) {
+function ScreenTile({
+  label,
+  stream,
+  muted,
+  focused,
+  onToggleFocus,
+}: {
+  label: string
+  stream: MediaStream
+  muted: boolean
+  focused: boolean
+  onToggleFocus: () => void
+}) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.srcObject = stream
   }, [stream])
 
-  function enterFullscreen() {
-    containerRef.current?.requestFullscreen().catch(() => {})
-  }
-
   return (
-    <div className="voice-tile screen-tile" ref={containerRef}>
-      <video ref={videoRef} autoPlay playsInline muted={muted} className="visible" onDoubleClick={enterFullscreen} />
+    <div className={`voice-tile screen-tile ${focused ? 'focused' : ''}`}>
+      <video ref={videoRef} autoPlay playsInline muted={muted} className="visible" onDoubleClick={onToggleFocus} />
       <div className="live-badge">
         <span className="live-badge-dot" /> AO VIVO
       </div>
-      <button className="screen-tile-fullscreen-btn" onClick={enterFullscreen} title="Tela cheia">
-        <MaximizeIcon size={22} />
+      <button
+        className="screen-tile-fullscreen-btn"
+        onClick={onToggleFocus}
+        title={focused ? 'Diminuir' : 'Ampliar'}
+      >
+        {focused ? <MinimizeIcon size={22} /> : <MaximizeIcon size={22} />}
       </button>
       <div className="voice-tile-label">
         <ScreenShareIcon size={13} /> {label}
@@ -157,57 +211,100 @@ export function VoiceStage({
   onOpenSettings: () => void
   onLeave: () => void
 }) {
-  const localVideoRef = useRef<HTMLVideoElement>(null)
   const [showMicMenu, setShowMicMenu] = useState(false)
   const [showCamMenu, setShowCamMenu] = useState(false)
+  const [focusedKey, setFocusedKey] = useState<string | null>(null)
+
+  const screenTiles: { key: string; label: string; stream: MediaStream; muted: boolean }[] = []
+  if (screenStream) screenTiles.push({ key: 'local-screen', label: 'Sua tela', stream: screenStream, muted: true })
+  participants.forEach((p, peerId) => {
+    if (p.screenStream) {
+      screenTiles.push({ key: `${peerId}-screen`, label: p.user.username, stream: p.screenStream, muted: deafened })
+    }
+  })
+  const screenKeysSignature = screenTiles.map((t) => t.key).join(',')
 
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream
-    }
-  }, [localStream])
+    if (focusedKey && !screenKeysSignature.split(',').includes(focusedKey)) setFocusedKey(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenKeysSignature, focusedKey])
+
+  function toggleFocus(key: string) {
+    setFocusedKey((prev) => (prev === key ? null : key))
+  }
+
+  const focusedTile = screenTiles.find((t) => t.key === focusedKey)
+
+  const cameraTiles = (
+    <>
+      <LocalTile
+        localUser={localUser}
+        localStream={localStream}
+        camOn={camOn}
+        micOn={micOn}
+        deafened={deafened}
+        speaking={speakingPeers.has('local')}
+      />
+      {Array.from(participants.entries()).map(([peerId, p]) => (
+        <RemoteTile
+          key={peerId}
+          peerId={peerId}
+          user={p.user}
+          stream={p.stream}
+          deafened={deafened}
+          speakerDeviceId={speakerDeviceId}
+          speaking={speakingPeers.has(peerId)}
+        />
+      ))}
+    </>
+  )
 
   return (
     <div className="voice-stage">
       <header className="chat-header">🔊 {channelName}</header>
       {error && <div className="voice-error">{error}</div>}
-      <div className="voice-grid">
-        <div
-          className={`voice-tile ${speakingPeers.has('local') ? 'speaking' : ''}`}
-          style={camOn ? undefined : bannerStyle(localUser.color)}
-        >
-          <video ref={localVideoRef} autoPlay playsInline muted className={camOn ? 'visible' : 'hidden'} />
-          {!camOn &&
-            (localUser.avatarImage ? (
-              <img className="voice-avatar-img" src={localUser.avatarImage} alt="" />
-            ) : (
-              <div className="voice-avatar" style={{ background: localUser.color }}>
-                {localUser.username.slice(0, 1).toUpperCase()}
-              </div>
-            ))}
-          <div className="voice-tile-label">
-            {localUser.username} (você)
-            <TileStatusIcons micOn={micOn} deafened={deafened} />
+      {focusedTile ? (
+        <div className="voice-focused-layout">
+          <div className="voice-focused-main">
+            <ScreenTile
+              label={focusedTile.label}
+              stream={focusedTile.stream}
+              muted={focusedTile.muted}
+              focused
+              onToggleFocus={() => toggleFocus(focusedTile.key)}
+            />
+          </div>
+          <div className="voice-thumbnail-row">
+            {cameraTiles}
+            {screenTiles
+              .filter((t) => t.key !== focusedTile.key)
+              .map((t) => (
+                <ScreenTile
+                  key={t.key}
+                  label={t.label}
+                  stream={t.stream}
+                  muted={t.muted}
+                  focused={false}
+                  onToggleFocus={() => toggleFocus(t.key)}
+                />
+              ))}
           </div>
         </div>
-        {Array.from(participants.entries()).map(([peerId, p]) => (
-          <RemoteTile
-            key={peerId}
-            peerId={peerId}
-            user={p.user}
-            stream={p.stream}
-            deafened={deafened}
-            speakerDeviceId={speakerDeviceId}
-            speaking={speakingPeers.has(peerId)}
-          />
-        ))}
-        {screenStream && <ScreenTile label="Sua tela" stream={screenStream} muted />}
-        {Array.from(participants.entries())
-          .filter(([, p]) => p.screenStream)
-          .map(([peerId, p]) => (
-            <ScreenTile key={`${peerId}-screen`} label={p.user.username} stream={p.screenStream!} muted={deafened} />
+      ) : (
+        <div className="voice-grid">
+          {cameraTiles}
+          {screenTiles.map((t) => (
+            <ScreenTile
+              key={t.key}
+              label={t.label}
+              stream={t.stream}
+              muted={t.muted}
+              focused={false}
+              onToggleFocus={() => toggleFocus(t.key)}
+            />
           ))}
-      </div>
+        </div>
+      )}
       <div className="voice-controls">
         <div className="voice-controls-pill">
           <div className="voice-btn-wrap">

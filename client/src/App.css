@@ -1468,18 +1468,45 @@ body {
   background: rgba(0, 0, 0, 0.75);
 }
 
-.screen-tile:fullscreen .screen-tile-fullscreen-btn {
-  display: none;
-}
-
-.screen-tile:fullscreen {
-  aspect-ratio: unset;
-  border-radius: 0;
-}
-
 .screen-tile video {
   object-fit: contain;
   background: #000;
+}
+
+.voice-focused-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.voice-focused-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.voice-focused-main .voice-tile {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: unset;
+}
+
+.voice-thumbnail-row {
+  flex-shrink: 0;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.voice-thumbnail-row .voice-tile {
+  flex-shrink: 0;
+  width: 160px;
+  aspect-ratio: 16 / 10;
 }
 
 .voice-avatar-img {

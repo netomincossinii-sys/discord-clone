@@ -373,6 +373,17 @@ export function MaximizeIcon(props: IconProps) {
   )
 }
 
+export function MinimizeIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <polyline points="4 9 10 9 10 3" />
+      <polyline points="20 15 14 15 14 21" />
+      <line x1="10" y1="9" x2="3" y2="2" />
+      <line x1="14" y1="15" x2="21" y2="22" />
+    </Base>
+  )
+}
+
 export function GearIcon(props: IconProps) {
   return (
     <Base {...props}>
