@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { Modal } from './Modal'
 
 interface ConfirmOptions {
   title?: string
+  icon?: ReactNode
   message: string
   confirmLabel?: string
   cancelLabel?: string
@@ -29,6 +30,7 @@ export function useConfirm() {
   const ConfirmDialog = options ? (
     <Modal onClose={() => settle(false)} width={380}>
       <div className="add-server-modal">
+        {options.icon && <div className="confirm-dialog-icon">{options.icon}</div>}
         {options.title && (
           <div className="modal-header-row">
             <h2>{options.title}</h2>

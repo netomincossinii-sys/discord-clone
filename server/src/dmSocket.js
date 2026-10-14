@@ -30,6 +30,13 @@ export function registerDmHandlers(io, socket, dbUser) {
       },
     });
 
+    if (conversation.hiddenForA || conversation.hiddenForB) {
+      await prisma.dmConversation.update({
+        where: { id: conversationId },
+        data: { hiddenForA: false, hiddenForB: false },
+      });
+    }
+
     const payload = {
       id: message.id,
       conversationId,

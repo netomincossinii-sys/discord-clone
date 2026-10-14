@@ -82,10 +82,12 @@ model Friendship {
 }
 
 model DmConversation {
-  id        String   @id @default(uuid())
-  userAId   String
-  userBId   String
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  userAId     String
+  userBId     String
+  createdAt   DateTime @default(now())
+  hiddenForA  Boolean  @default(false)
+  hiddenForB  Boolean  @default(false)
 
   userA    User        @relation("DmConversationA", fields: [userAId], references: [id], onDelete: Cascade)
   userB    User        @relation("DmConversationB", fields: [userBId], references: [id], onDelete: Cascade)

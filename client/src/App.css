@@ -2432,6 +2432,11 @@ body {
   margin: 4px 0 0;
 }
 
+.confirm-dialog-icon {
+  color: var(--color-accent);
+  margin-bottom: 8px;
+}
+
 .rail-divider {
   width: 32px;
   height: 2px;
@@ -2763,26 +2768,55 @@ body {
   padding-bottom: 60px;
 }
 
+.dm-conversation-row-wrap {
+  display: flex;
+  align-items: center;
+  margin: 1px 8px;
+  border-radius: 4px;
+}
+
+.dm-conversation-row-wrap:hover {
+  background: var(--color-bg-600);
+}
+
+.dm-conversation-row-wrap.active {
+  background: var(--color-bg-500);
+}
+
 .dm-conversation-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 8px 12px;
-  margin: 1px 8px;
-  border-radius: 4px;
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
 }
 
-.dm-conversation-item:hover {
-  background: var(--color-bg-600);
+.dm-conversation-close-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 8px;
+  border-radius: 4px;
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.1s ease, background 0.1s ease;
 }
 
-.dm-conversation-item.active {
+.dm-conversation-row-wrap:hover .dm-conversation-close-btn {
+  opacity: 1;
+}
+
+.dm-conversation-close-btn:hover {
   background: var(--color-bg-500);
+  color: #fff;
 }
 
 .dm-conversation-text {

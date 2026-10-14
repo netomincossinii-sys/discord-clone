@@ -36,6 +36,7 @@ dmsRouter.get("/dms", requireAuth, async (req, res) => {
   });
 
   const result = conversations
+    .filter((c) => !(c.userAId === req.userId ? c.hiddenForA : c.hiddenForB))
     .map((c) => {
       const other = c.userAId === req.userId ? c.userB : c.userA;
       const last = c.messages[0];
@@ -49,6 +50,16 @@ dmsRouter.get("/dms", requireAuth, async (req, res) => {
     .sort((a, b) => b.lastActivity - a.lastActivity);
 
   res.json({ conversations: result });
+});
+
+dmsRouter.post("/dms/:conversationId/hide", requireAuth, async (req, res) => {
+  const conversation = await prisma.dmConversation.findUnique({ where: { id: req.params.conversationId } });
+  if (!conversation || (conversation.userAId !== req.userId && conversation.userBId !== req.userId)) {
+    return res.status(404).json({ error: "not_found" });
+  }
+  const field = conversation.userAId === req.userId ? "hiddenForA" : "hiddenForB";
+  await prisma.dmConversation.update({ where: { id: conversation.id }, data: { [field]: true } });
+  res.json({ ok: true });
 });
 
 dmsRouter.post("/dms/with/:userId", requireAuth, async (req, res) => {

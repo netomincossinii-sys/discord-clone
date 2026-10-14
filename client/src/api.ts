@@ -279,6 +279,10 @@ export function getDmMessages(conversationId: string) {
   return request<{ messages: DmMessage[] }>(`/api/dms/${conversationId}/messages`)
 }
 
+export function hideDmConversation(conversationId: string) {
+  return request<{ ok: true }>(`/api/dms/${conversationId}/hide`, { method: 'POST' })
+}
+
 export interface BlockedUser {
   id: string
   username: string

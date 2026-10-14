@@ -31,7 +31,7 @@ import { CreateCategoryModal } from './CreateCategoryModal'
 import { ChannelSettingsModal } from './ChannelSettingsModal'
 import { RolesModal } from './RolesModal'
 import { SFX } from './sfx'
-import { UsersIcon, MessageCircleIcon, PlusIcon, MicIcon, MicOffIcon, HeadphonesIcon, HeadphonesOffIcon, ChevronDownIcon, SettingsIcon, GearIcon, LockIcon, ScreenShareIcon } from './Icon'
+import { UsersIcon, MessageCircleIcon, PlusIcon, MicIcon, MicOffIcon, HeadphonesIcon, HeadphonesOffIcon, ChevronDownIcon, SettingsIcon, GearIcon, LockIcon, ScreenShareIcon, HelpCircleIcon } from './Icon'
 import { isDesktopNotificationsEnabled } from './voicePrefs'
 import { STATUS_META, API_URL } from './api'
 import type { Profile, UserStatus, FriendUser, PendingRequest, DmConversation, DmMessage } from './api'
@@ -576,6 +576,19 @@ function App() {
     }
   }
 
+  async function handleHideDmConversation(conversationId: string) {
+    const ok = await confirm({
+      icon: <HelpCircleIcon size={28} />,
+      message:
+        'Tirar essa conversa da sua lista? Ela volta a aparecer se alguém mandar mensagem de novo, ou se você mandar pra essa pessoa.',
+      confirmLabel: 'Confirmar',
+    })
+    if (!ok) return
+    await api.hideDmConversation(conversationId)
+    setDmConversations((prev) => prev.filter((c) => c.id !== conversationId))
+    if (activeDmConversationId === conversationId) setActiveDmConversationId(null)
+  }
+
   function sendDmMessage(attachment: Attachment | null) {
     if (!socket || !activeDmConversationId) return
     if (!dmDraft.trim() && !attachment) return
@@ -862,6 +875,7 @@ function App() {
           conversations={dmConversations}
           activeConversationId={activeDmConversationId}
           onSelect={selectDmConversation}
+          onHide={handleHideDmConversation}
         />
       )}
 
