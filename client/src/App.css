@@ -1209,6 +1209,10 @@ body {
 .message-attachment-image-link {
   display: inline-block;
   margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
 .message-attachment-image {
@@ -1216,6 +1220,51 @@ body {
   max-height: 300px;
   border-radius: 8px;
   display: block;
+}
+
+.image-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+.image-lightbox-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: default;
+}
+
+.image-lightbox-actions {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  display: flex;
+  gap: 10px;
+  z-index: 1;
+}
+
+.image-lightbox-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.image-lightbox-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .message-attachment-file {

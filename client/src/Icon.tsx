@@ -384,6 +384,16 @@ export function MinimizeIcon(props: IconProps) {
   )
 }
 
+export function DownloadIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M12 3v12" />
+      <polyline points="7 10 12 15 17 10" />
+      <path d="M4 19h16" />
+    </Base>
+  )
+}
+
 export function GearIcon(props: IconProps) {
   return (
     <Base {...props}>
