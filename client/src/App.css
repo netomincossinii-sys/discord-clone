@@ -63,6 +63,27 @@ body {
   background: var(--color-bg-700);
 }
 
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 1;
+  transition: opacity 0.22s ease;
+}
+
+.splash-screen.fading {
+  opacity: 0;
+}
+
+.splash-video {
+  width: 220px;
+  height: 220px;
+}
+
 .login-card {
   background: var(--color-bg-800);
   padding: 32px;

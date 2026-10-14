@@ -4,6 +4,7 @@ import './App.css'
 import * as api from './api'
 import type { AuthUser } from './api'
 import { AuthScreen } from './AuthScreen'
+import { SplashScreen } from './SplashScreen'
 import { VoiceStage } from './VoiceStage'
 import { ConnectedVoiceBar } from './ConnectedVoiceBar'
 import { useVoice } from './useVoice'
@@ -41,6 +42,7 @@ type RailMode = 'home' | 'servers' | 'friends' | 'dms'
 
 function App() {
   const [checkingSession, setCheckingSession] = useState(true)
+  const [showSplash, setShowSplash] = useState(true)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [socket, setSocket] = useState<Socket | null>(null)
   const [servers, setServers] = useState<ServerInfo[]>([])
@@ -661,12 +663,23 @@ function App() {
     setOutgoingCallConversationId(null)
   }
 
+  if (showSplash) {
+    return <SplashScreen onDone={() => setShowSplash(false)} />
+  }
+
   if (checkingSession) {
     return <div className="login-screen" />
   }
 
   if (!user) {
-    return <AuthScreen onAuthenticated={setUser} />
+    return (
+      <AuthScreen
+        onAuthenticated={(u) => {
+          setUser(u)
+          setShowSplash(true)
+        }}
+      />
+    )
   }
 
   return (
