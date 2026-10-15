@@ -117,7 +117,10 @@ export function ProfileCard({
   return (
     <Modal onClose={onClose} width={360}>
       {!profile ? (
-        <div className="profile-loading">Carregando...</div>
+        <div className="profile-loading">
+          <div className="loading-spinner" />
+          Carregando...
+        </div>
       ) : (
         <div className="profile-card">
           <div

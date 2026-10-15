@@ -1904,6 +1904,25 @@ body {
   padding: 40px;
   text-align: center;
   color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--color-bg-600);
+  border-top-color: var(--color-accent);
+  animation: spin 0.7s linear infinite;
 }
 
 .profile-banner {

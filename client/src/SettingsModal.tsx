@@ -84,7 +84,13 @@ function AccountSection({ userId, onEditProfile }: { userId: string; onEditProfi
     }
   }
 
-  if (!profile) return <div className="profile-loading">Carregando...</div>
+  if (!profile)
+    return (
+      <div className="profile-loading">
+        <div className="loading-spinner" />
+        Carregando...
+      </div>
+    )
 
   return (
     <div>
