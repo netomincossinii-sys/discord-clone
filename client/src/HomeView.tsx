@@ -2,6 +2,7 @@ import { LogoIcon } from './LogoIcon'
 import { HeadphonesIcon, InstagramIcon, ArrowRightIcon } from './Icon'
 
 const INSTAGRAM_URL = 'https://www.instagram.com/callf.y/'
+const SUPPORT_EMAIL = 'callfy2026@gmail.com'
 
 export function HomeView() {
   return (
@@ -45,7 +46,7 @@ export function HomeView() {
             Precisa de ajuda? Envie uma mensagem para nossa equipe e receba suporte com rapidez e praticidade.
           </p>
           <p className="home-hero-subdesc">Dúvidas, problemas ou sugestões — estamos aqui para ajudar.</p>
-          <a className="home-support-btn" href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
+          <a className="home-support-btn" href={`mailto:${SUPPORT_EMAIL}`}>
             Enviar mensagem <ArrowRightIcon size={16} />
           </a>
         </div>
