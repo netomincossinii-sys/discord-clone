@@ -172,6 +172,7 @@ export interface Profile {
   bio: string | null
   avatarImage: string | null
   bannerColor: string
+  bannerImage: string | null
   activityText: string | null
   activityStartedAt: string | null
   interestTags: string[]
@@ -196,6 +197,7 @@ export function getProfile(userId: string) {
 export interface ProfileUpdate {
   bio?: string
   bannerColor?: string
+  bannerImage?: string | null
   interestTags?: string[]
   activityText?: string
   avatarImage?: string | null

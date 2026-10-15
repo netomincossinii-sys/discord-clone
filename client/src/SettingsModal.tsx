@@ -63,7 +63,14 @@ function AccountSection({ userId, onEditProfile }: { userId: string; onEditProfi
     <div>
       <h2>Minha conta</h2>
       <div className="account-card">
-        <div className="profile-banner" style={{ background: profile.bannerColor }} />
+        <div
+          className="profile-banner"
+          style={
+            profile.bannerImage
+              ? { backgroundImage: `url(${profile.bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              : { background: profile.bannerColor }
+          }
+        />
         <div className="account-card-body">
           <div className="account-card-row">
             {profile.avatarImage ? (

@@ -1,9 +1,8 @@
 import { useRef, useState } from 'react'
 import { Modal } from './Modal'
 import { XIcon, PlusIcon } from './Icon'
-import { resizeImageToDataUrl } from './imageUtils'
-
-const ICON_SIZE = 256
+import { ImageEditorModal } from './ImageEditorModal'
+import { AVATAR_OUTPUT_SIZE, MAX_AVATAR_UPLOAD_BYTES, isAnimatedImage, readFileAsDataUrl } from './imageUtils'
 
 const JOIN_ERROR_MESSAGES: Record<string, string> = {
   invalid_code: 'Cole um código ou link de convite válido.',
@@ -34,6 +33,7 @@ export function AddServerModal({
   const [imageError, setImageError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
+  const [iconEditFile, setIconEditFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleJoin() {
@@ -52,13 +52,18 @@ export function AddServerModal({
 
   async function handleIconFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
-    try {
-      setIconImage(await resizeImageToDataUrl(file, ICON_SIZE))
-      setImageError(null)
-    } catch {
-      setImageError('Não foi possível processar essa imagem.')
+    if (isAnimatedImage(file)) {
+      try {
+        setIconImage(await readFileAsDataUrl(file, MAX_AVATAR_UPLOAD_BYTES))
+        setImageError(null)
+      } catch {
+        setImageError('Esse GIF é muito grande ou inválido.')
+      }
+      return
     }
+    setIconEditFile(file)
   }
 
   async function handleCreate() {
@@ -75,6 +80,7 @@ export function AddServerModal({
   }
 
   return (
+    <>
     <Modal onClose={onClose} width={420}>
       {step === 'hub' && (
         <div className="add-server-modal">
@@ -186,5 +192,22 @@ export function AddServerModal({
         </div>
       )}
     </Modal>
+
+    {iconEditFile && (
+      <ImageEditorModal
+        file={iconEditFile}
+        aspect={1}
+        outputWidth={AVATAR_OUTPUT_SIZE}
+        outputHeight={AVATAR_OUTPUT_SIZE}
+        round
+        title="Ajustar ícone do servidor"
+        onCancel={() => setIconEditFile(null)}
+        onConfirm={(dataUrl) => {
+          setIconImage(dataUrl)
+          setIconEditFile(null)
+        }}
+      />
+    )}
+    </>
   )
 }

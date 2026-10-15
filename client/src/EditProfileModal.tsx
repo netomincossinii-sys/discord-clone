@@ -3,11 +3,21 @@ import * as api from './api'
 import { BANNER_COLORS } from './api'
 import type { Profile } from './api'
 import { Modal } from './Modal'
-import { resizeImageToDataUrl } from './imageUtils'
+import { ImageEditorModal } from './ImageEditorModal'
+import { XIcon } from './Icon'
+import {
+  AVATAR_OUTPUT_SIZE,
+  BANNER_ASPECT,
+  BANNER_OUTPUT_WIDTH,
+  BANNER_OUTPUT_HEIGHT,
+  MAX_AVATAR_UPLOAD_BYTES,
+  MAX_BANNER_UPLOAD_BYTES,
+  isAnimatedImage,
+  readFileAsDataUrl,
+} from './imageUtils'
 
 const MAX_BIO = 190
 const MAX_TAGS = 5
-const AVATAR_SIZE = 256
 
 export function EditProfileModal({
   profile,
@@ -21,22 +31,47 @@ export function EditProfileModal({
   const [bio, setBio] = useState(profile.bio ?? '')
   const [activityText, setActivityText] = useState(profile.activityText ?? '')
   const [bannerColor, setBannerColor] = useState(profile.bannerColor)
+  const [bannerImage, setBannerImage] = useState<string | null>(profile.bannerImage)
   const [tags, setTags] = useState<string[]>(profile.interestTags)
   const [tagDraft, setTagDraft] = useState('')
   const [avatarImage, setAvatarImage] = useState<string | null>(profile.avatarImage)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [avatarEditFile, setAvatarEditFile] = useState<File | null>(null)
+  const [bannerEditFile, setBannerEditFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
-    try {
-      const dataUrl = await resizeImageToDataUrl(file, AVATAR_SIZE)
-      setAvatarImage(dataUrl)
-    } catch {
-      setError('Não foi possível processar essa imagem.')
+    if (isAnimatedImage(file)) {
+      try {
+        setAvatarImage(await readFileAsDataUrl(file, MAX_AVATAR_UPLOAD_BYTES))
+        setError(null)
+      } catch {
+        setError('Esse GIF é muito grande ou inválido.')
+      }
+      return
     }
+    setAvatarEditFile(file)
+  }
+
+  async function handleBannerFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (isAnimatedImage(file)) {
+      try {
+        setBannerImage(await readFileAsDataUrl(file, MAX_BANNER_UPLOAD_BYTES))
+        setError(null)
+      } catch {
+        setError('Esse GIF é muito grande ou inválido.')
+      }
+      return
+    }
+    setBannerEditFile(file)
   }
 
   function addTag() {
@@ -58,6 +93,7 @@ export function EditProfileModal({
         bio,
         activityText,
         bannerColor,
+        bannerImage,
         interestTags: tags,
         avatarImage,
       })
@@ -71,9 +107,18 @@ export function EditProfileModal({
   }
 
   return (
+    <>
     <Modal onClose={onClose} width={420}>
       <div className="edit-profile">
-        <div className="profile-banner" style={{ background: bannerColor }} />
+        <button
+          className="profile-banner profile-banner-edit-btn"
+          style={
+            bannerImage ? { backgroundImage: `url(${bannerImage})` } : { background: bannerColor }
+          }
+          onClick={() => bannerInputRef.current?.click()}
+          title="Clique no banner pra trocar"
+        />
+        <input ref={bannerInputRef} type="file" accept="image/*" hidden onChange={handleBannerFileChange} />
         <div className="profile-avatar-wrap">
           <button
             className="profile-avatar-edit-btn"
@@ -92,7 +137,7 @@ export function EditProfileModal({
         </div>
 
         <div className="edit-profile-body">
-          <div className="edit-hint">Clique na foto pra trocar</div>
+          <div className="edit-hint">Clique na foto ou no banner pra trocar. Aceita imagem ou GIF animado.</div>
 
           <label className="edit-label">Sobre mim</label>
           <textarea
@@ -151,13 +196,29 @@ export function EditProfileModal({
           )}
 
           <label className="edit-label">Cor do banner</label>
+          <p className="edit-hint" style={{ marginTop: -10 }}>
+            Usada quando não há imagem de banner.
+          </p>
           <div className="banner-color-list">
+            {bannerImage && (
+              <button
+                className="banner-color-swatch"
+                style={{ background: 'var(--color-bg-600)' }}
+                onClick={() => setBannerImage(null)}
+                title="Remover imagem do banner"
+              >
+                <XIcon size={14} />
+              </button>
+            )}
             {BANNER_COLORS.map((color) => (
               <button
                 key={color}
-                className={`banner-color-swatch ${bannerColor === color ? 'active' : ''}`}
+                className={`banner-color-swatch ${bannerColor === color && !bannerImage ? 'active' : ''}`}
                 style={{ background: color }}
-                onClick={() => setBannerColor(color)}
+                onClick={() => {
+                  setBannerColor(color)
+                  setBannerImage(null)
+                }}
               />
             ))}
           </div>
@@ -175,5 +236,37 @@ export function EditProfileModal({
         </div>
       </div>
     </Modal>
+
+    {avatarEditFile && (
+      <ImageEditorModal
+        file={avatarEditFile}
+        aspect={1}
+        outputWidth={AVATAR_OUTPUT_SIZE}
+        outputHeight={AVATAR_OUTPUT_SIZE}
+        round
+        title="Ajustar foto de perfil"
+        onCancel={() => setAvatarEditFile(null)}
+        onConfirm={(dataUrl) => {
+          setAvatarImage(dataUrl)
+          setAvatarEditFile(null)
+        }}
+      />
+    )}
+
+    {bannerEditFile && (
+      <ImageEditorModal
+        file={bannerEditFile}
+        aspect={BANNER_ASPECT}
+        outputWidth={BANNER_OUTPUT_WIDTH}
+        outputHeight={BANNER_OUTPUT_HEIGHT}
+        title="Ajustar banner do perfil"
+        onCancel={() => setBannerEditFile(null)}
+        onConfirm={(dataUrl) => {
+          setBannerImage(dataUrl)
+          setBannerEditFile(null)
+        }}
+      />
+    )}
+    </>
   )
 }

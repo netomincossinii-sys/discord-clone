@@ -453,3 +453,63 @@ export function Volume2Icon(props: IconProps) {
     </Base>
   )
 }
+
+export function RotateCcwIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v5h5" />
+    </Base>
+  )
+}
+
+export function RotateCwIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M21 12a9 9 0 1 1-3-6.7" />
+      <path d="M21 4v5h-5" />
+    </Base>
+  )
+}
+
+export function FlipHorizontalIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M12 3v18" />
+      <path d="M16 7l4 0 0 10-4 0" />
+      <path d="M8 7l-4 0 0 10 4 0" />
+    </Base>
+  )
+}
+
+export function FlipVerticalIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M3 12h18" />
+      <path d="M7 8l0 -4 10 0 0 4" />
+      <path d="M7 16l0 4 10 0 0 -4" />
+    </Base>
+  )
+}
+
+export function ZoomInIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <line x1="11" y1="8" x2="11" y2="14" />
+      <line x1="8" y1="11" x2="14" y2="11" />
+    </Base>
+  )
+}
+
+export function RefreshIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M3 12a9 9 0 0 1 15.3-6.5L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-15.3 6.5L3 16" />
+      <path d="M3 21v-5h5" />
+    </Base>
+  )
+}

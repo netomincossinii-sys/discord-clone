@@ -19,6 +19,11 @@ const MAX_TAGS = 5;
 const MAX_TAG_LENGTH = 24;
 const MAX_ACTIVITY_LENGTH = 60;
 const MAX_AVATAR_BASE64_LENGTH = 600_000; // ~450KB decoded, generous for a small square avatar
+const MAX_BANNER_BASE64_LENGTH = 1_500_000; // ~1.1MB decoded, generous for a wide banner (incl. GIFs)
+
+function isValidImage(value, maxLength) {
+  return typeof value === "string" && value.startsWith("data:image/") && value.length <= maxLength;
+}
 
 const USER_STATUSES = ["ONLINE", "IDLE", "DND", "INVISIBLE"];
 
@@ -29,6 +34,7 @@ const PROFILE_SELECT = {
   bio: true,
   avatarImage: true,
   bannerColor: true,
+  bannerImage: true,
   activityText: true,
   activityStartedAt: true,
   interestTags: true,
@@ -103,14 +109,20 @@ profileRouter.patch("/profile/me", requireAuth, async (req, res) => {
   if (body.avatarImage !== undefined) {
     if (body.avatarImage === null) {
       data.avatarImage = null;
-    } else if (
-      typeof body.avatarImage !== "string" ||
-      !body.avatarImage.startsWith("data:image/") ||
-      body.avatarImage.length > MAX_AVATAR_BASE64_LENGTH
-    ) {
+    } else if (!isValidImage(body.avatarImage, MAX_AVATAR_BASE64_LENGTH)) {
       return res.status(400).json({ error: "invalid_avatar_image" });
     } else {
       data.avatarImage = body.avatarImage;
+    }
+  }
+
+  if (body.bannerImage !== undefined) {
+    if (body.bannerImage === null) {
+      data.bannerImage = null;
+    } else if (!isValidImage(body.bannerImage, MAX_BANNER_BASE64_LENGTH)) {
+      return res.status(400).json({ error: "invalid_banner_image" });
+    } else {
+      data.bannerImage = body.bannerImage;
     }
   }
 

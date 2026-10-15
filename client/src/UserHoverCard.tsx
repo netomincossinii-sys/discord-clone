@@ -70,7 +70,14 @@ export function UserHoverCard({
         pos &&
         createPortal(
           <div className="user-hover-card" style={{ top: pos.top, left: pos.left, width: CARD_WIDTH }}>
-            <div className="user-hover-banner" style={{ background: profile.bannerColor }} />
+            <div
+              className="user-hover-banner"
+              style={
+                profile.bannerImage
+                  ? { backgroundImage: `url(${profile.bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : { background: profile.bannerColor }
+              }
+            />
             <div className="user-hover-avatar-wrap">
               {profile.avatarImage ? (
                 <img className="user-hover-avatar-img" src={profile.avatarImage} alt="" />

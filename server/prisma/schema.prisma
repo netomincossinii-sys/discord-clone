@@ -37,6 +37,7 @@ model User {
   bio               String?
   avatarImage       String?
   bannerColor       String    @default("#f37108")
+  bannerImage       String?
   activityText      String?
   activityStartedAt DateTime?
   interestTags      String[] @default([])

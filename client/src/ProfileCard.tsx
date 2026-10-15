@@ -120,7 +120,14 @@ export function ProfileCard({
         <div className="profile-loading">Carregando...</div>
       ) : (
         <div className="profile-card">
-          <div className="profile-banner" style={{ background: profile.bannerColor }} />
+          <div
+            className="profile-banner"
+            style={
+              profile.bannerImage
+                ? { backgroundImage: `url(${profile.bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { background: profile.bannerColor }
+            }
+          />
           <div className="profile-avatar-wrap">
             {profile.avatarImage ? (
               <img className="profile-avatar-img" src={profile.avatarImage} alt="" />

@@ -2,37 +2,18 @@ import { useRef, useState } from 'react'
 import { Modal } from './Modal'
 import { XIcon } from './Icon'
 import { BANNER_COLORS } from './api'
-import { resizeImageToDataUrl } from './imageUtils'
+import { ImageEditorModal } from './ImageEditorModal'
+import {
+  AVATAR_OUTPUT_SIZE,
+  BANNER_ASPECT,
+  BANNER_OUTPUT_WIDTH,
+  BANNER_OUTPUT_HEIGHT,
+  MAX_AVATAR_UPLOAD_BYTES,
+  MAX_BANNER_UPLOAD_BYTES,
+  isAnimatedImage,
+  readFileAsDataUrl,
+} from './imageUtils'
 import type { ServerInfo } from './types'
-
-const ICON_SIZE = 256
-const BANNER_WIDTH = 640
-const BANNER_HEIGHT = 240
-
-function resizeBannerToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const reader = new FileReader()
-    reader.onerror = reject
-    reader.onload = () => {
-      img.onerror = reject
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = BANNER_WIDTH
-        canvas.height = BANNER_HEIGHT
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return reject(new Error('no_canvas_context'))
-        const scale = Math.max(BANNER_WIDTH / img.width, BANNER_HEIGHT / img.height)
-        const w = img.width * scale
-        const h = img.height * scale
-        ctx.drawImage(img, (BANNER_WIDTH - w) / 2, (BANNER_HEIGHT - h) / 2, w, h)
-        resolve(canvas.toDataURL('image/jpeg', 0.85))
-      }
-      img.src = reader.result as string
-    }
-    reader.readAsDataURL(file)
-  })
-}
 
 export function EditServerModal({
   server,
@@ -51,25 +32,39 @@ export function EditServerModal({
   const [error, setError] = useState<string | null>(null)
   const iconInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
+  const [iconEditFile, setIconEditFile] = useState<File | null>(null)
+  const [bannerEditFile, setBannerEditFile] = useState<File | null>(null)
 
   async function handleIconFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
-    try {
-      setIconImage(await resizeImageToDataUrl(file, ICON_SIZE))
-    } catch {
-      setError('Não foi possível processar essa imagem.')
+    if (isAnimatedImage(file)) {
+      try {
+        setIconImage(await readFileAsDataUrl(file, MAX_AVATAR_UPLOAD_BYTES))
+        setError(null)
+      } catch {
+        setError('Esse GIF é muito grande ou inválido.')
+      }
+      return
     }
+    setIconEditFile(file)
   }
 
   async function handleBannerFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
-    try {
-      setBannerImage(await resizeBannerToDataUrl(file))
-    } catch {
-      setError('Não foi possível processar essa imagem.')
+    if (isAnimatedImage(file)) {
+      try {
+        setBannerImage(await readFileAsDataUrl(file, MAX_BANNER_UPLOAD_BYTES))
+        setError(null)
+      } catch {
+        setError('Esse GIF é muito grande ou inválido.')
+      }
+      return
     }
+    setBannerEditFile(file)
   }
 
   async function handleSave() {
@@ -87,6 +82,7 @@ export function EditServerModal({
   }
 
   return (
+    <>
     <Modal onClose={onClose} width={420}>
       <div className="add-server-modal">
         <div className="modal-header-row">
@@ -106,7 +102,10 @@ export function EditServerModal({
         <input className="edit-input" value={name} onChange={(e) => setName(e.target.value)} />
 
         <label className="edit-label">Banner</label>
-        <p className="edit-hint">Aparece no topo da lista de canais. Sem cor nem imagem, a sidebar fica normal (sem banner).</p>
+        <p className="edit-hint">
+          Aparece no topo da lista de canais. Aceita imagem ou GIF animado. Sem cor nem imagem, a sidebar fica normal
+          (sem banner).
+        </p>
 
         {bannerImage ? (
           <button className="server-banner-preview-btn" onClick={() => bannerInputRef.current?.click()} title="Trocar banner">
@@ -160,5 +159,37 @@ export function EditServerModal({
         </div>
       </div>
     </Modal>
+
+    {iconEditFile && (
+      <ImageEditorModal
+        file={iconEditFile}
+        aspect={1}
+        outputWidth={AVATAR_OUTPUT_SIZE}
+        outputHeight={AVATAR_OUTPUT_SIZE}
+        round
+        title="Ajustar ícone do servidor"
+        onCancel={() => setIconEditFile(null)}
+        onConfirm={(dataUrl) => {
+          setIconImage(dataUrl)
+          setIconEditFile(null)
+        }}
+      />
+    )}
+
+    {bannerEditFile && (
+      <ImageEditorModal
+        file={bannerEditFile}
+        aspect={BANNER_ASPECT}
+        outputWidth={BANNER_OUTPUT_WIDTH}
+        outputHeight={BANNER_OUTPUT_HEIGHT}
+        title="Ajustar banner do servidor"
+        onCancel={() => setBannerEditFile(null)}
+        onConfirm={(dataUrl) => {
+          setBannerImage(dataUrl)
+          setBannerEditFile(null)
+        }}
+      />
+    )}
+    </>
   )
 }
