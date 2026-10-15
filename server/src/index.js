@@ -7,6 +7,7 @@ import { parseCookie } from "cookie";
 import { Server } from "socket.io";
 import { prisma } from "./db.js";
 import { authRouter } from "./routes/auth.js";
+import { googleAuthRouter } from "./routes/googleAuth.js";
 import { profileRouter } from "./routes/profile.js";
 import { friendsRouter } from "./routes/friends.js";
 import { dmsRouter } from "./routes/dms.js";
@@ -36,6 +37,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api", authRouter);
+app.use("/api", googleAuthRouter);
 app.use("/api", profileRouter);
 app.use("/api", dmsRouter);
 app.use("/api", turnRouter);

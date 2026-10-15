@@ -91,6 +91,7 @@ function App() {
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null)
   const [showShareScreen, setShowShareScreen] = useState(false)
   const [resetToken, setResetToken] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const localVoiceUser: PresenceUser | null = useMemo(
@@ -125,7 +126,12 @@ function App() {
       setResetToken(token)
       params.delete('reset_token')
     }
-    if (invite || token) {
+    const authError = params.get('auth_error')
+    if (authError) {
+      setAuthError(authError)
+      params.delete('auth_error')
+    }
+    if (invite || token || authError) {
       const rest = params.toString()
       window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : ''))
     }
@@ -744,6 +750,7 @@ function App() {
   if (!user) {
     return (
       <AuthScreen
+        initialError={authError}
         onAuthenticated={(u) => {
           setUser(u)
           setShowSplash(true)

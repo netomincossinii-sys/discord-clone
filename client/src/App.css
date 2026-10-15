@@ -1447,6 +1447,42 @@ body {
   background: none;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-bg-600);
+}
+
+.login-card button.auth-google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-bg-600);
+  background: var(--color-bg-700);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-google-btn:hover {
+  background: var(--color-bg-600);
+}
+
 .voice-stage {
   display: flex;
   flex-direction: column;

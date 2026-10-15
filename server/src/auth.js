@@ -4,6 +4,16 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_TTL = "7d";
 export const COOKIE_NAME = "chat_token";
+const isProd = process.env.NODE_ENV === "production";
+
+export function setAuthCookie(res, token) {
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    sameSite: isProd ? "none" : "lax",
+    secure: isProd,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
 
 export function hashPassword(password) {
   return bcrypt.hash(password, 10);

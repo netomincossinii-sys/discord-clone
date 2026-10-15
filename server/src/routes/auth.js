@@ -1,7 +1,7 @@
 import { Router } from "express";
 import crypto from "node:crypto";
 import { prisma } from "../db.js";
-import { hashPassword, verifyPassword, signToken, COOKIE_NAME, requireAuth } from "../auth.js";
+import { hashPassword, verifyPassword, signToken, requireAuth, setAuthCookie, COOKIE_NAME } from "../auth.js";
 import { pickColor } from "../data.js";
 import { sendPasswordResetEmail, CLIENT_URL } from "../mailer.js";
 
@@ -17,15 +17,6 @@ const lastResetRequestByEmail = new Map();
 
 function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
-}
-
-function setAuthCookie(res, token) {
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: isProd ? "none" : "lax",
-    secure: isProd,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
 }
 
 authRouter.post("/register", async (req, res) => {

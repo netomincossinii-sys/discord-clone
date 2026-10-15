@@ -2,26 +2,43 @@ import { useState } from 'react'
 import * as api from './api'
 import type { AuthUser } from './api'
 import { LogoIcon } from './LogoIcon'
+import { GoogleIcon } from './Icon'
 
 type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent'
 
-export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid_username: 'Usuário deve ter 3-20 caracteres (letras, números, _).',
+  weak_password: 'Senha deve ter ao menos 6 caracteres.',
+  username_taken: 'Esse usuário já existe.',
+  invalid_credentials: 'Usuário ou senha incorretos.',
+  invalid_email: 'Digite um e-mail válido.',
+  email_taken: 'Esse e-mail já está em uso por outra conta.',
+  invalid_token: 'Esse link expirou ou é inválido. Peça um novo.',
+  google_unavailable: 'Login com Google ainda não está disponível.',
+  google_failed: 'Não foi possível entrar com o Google. Tente novamente.',
+}
+
+function describeError(code: string) {
+  return ERROR_MESSAGES[code] ?? 'Algo deu errado. Tente novamente.'
+}
+
+export function AuthScreen({
+  onAuthenticated,
+  initialError,
+}: {
+  onAuthenticated: (user: AuthUser) => void
+  initialError?: string | null
+}) {
   const [mode, setMode] = useState<Mode>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [email, setEmail] = useState('')
   const [forgotEmail, setForgotEmail] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError ? describeError(initialError) : null)
   const [loading, setLoading] = useState(false)
 
-  const errorMessages: Record<string, string> = {
-    invalid_username: 'Usuário deve ter 3-20 caracteres (letras, números, _).',
-    weak_password: 'Senha deve ter ao menos 6 caracteres.',
-    username_taken: 'Esse usuário já existe.',
-    invalid_credentials: 'Usuário ou senha incorretos.',
-    invalid_email: 'Digite um e-mail válido.',
-    email_taken: 'Esse e-mail já está em uso por outra conta.',
-    invalid_token: 'Esse link expirou ou é inválido. Peça um novo.',
+  function loginWithGoogle() {
+    window.location.href = `${api.API_URL}/api/auth/google`
   }
 
   function switchMode(next: Mode) {
@@ -38,7 +55,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
       onAuthenticated(user)
     } catch (err) {
       const code = err instanceof Error ? err.message : 'unknown'
-      setError(errorMessages[code] ?? 'Algo deu errado. Tente novamente.')
+      setError(describeError(code))
     } finally {
       setLoading(false)
     }
@@ -138,6 +155,13 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
             {loading ? '...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
           </button>
         </form>
+        <div className="auth-divider">
+          <span>ou</span>
+        </div>
+        <button type="button" className="auth-google-btn" onClick={loginWithGoogle}>
+          <GoogleIcon size={18} />
+          Continuar com o Google
+        </button>
         <button className="auth-switch" onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}>
           {mode === 'login' ? 'Não tem conta? Criar uma' : 'Já tem conta? Entrar'}
         </button>
