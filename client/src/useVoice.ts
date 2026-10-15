@@ -173,7 +173,12 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
         return next
       })
       if (isScreenStream) {
+        SFX.screenShareStart()
+        let cleared = false
         const clearScreenStream = () => {
+          if (cleared) return
+          cleared = true
+          SFX.screenShareStop()
           setParticipants((prev) => {
             const current = prev.get(peerId)
             if (!current || current.screenStream?.id !== incomingStream.id) return prev
@@ -289,6 +294,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
         setMicOn(false)
         prefs.setDefaultMicMuted(true)
       }
+      next ? SFX.deafen() : SFX.undeafen()
       return next
     })
   }, [])
@@ -408,6 +414,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     screenStreamRef.current = null
     setScreenStream(null)
     setIsSharingScreen(false)
+    SFX.screenShareStop()
   }, [renegotiate])
 
   const startScreenShare = useCallback(async (options?: { displaySurface?: 'monitor' | 'window' | 'browser'; audio?: boolean }) => {
@@ -425,6 +432,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       })
       setScreenStream(display)
       setIsSharingScreen(true)
+      SFX.screenShareStart()
     } catch {
       // usuário cancelou o seletor de tela; não é um erro a exibir
     }

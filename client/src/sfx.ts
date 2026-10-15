@@ -36,5 +36,23 @@ export const SFX = {
   },
   mute: () => beep(380, 70),
   unmute: () => beep(620, 70),
+  deafen: () => {
+    beep(480, 70)
+    beep(260, 110, 70)
+  },
+  undeafen: () => {
+    beep(400, 70)
+    beep(680, 90, 70)
+  },
+  screenShareStart: () => {
+    beep(520, 60)
+    beep(680, 60, 70)
+    beep(880, 100, 140)
+  },
+  screenShareStop: () => {
+    beep(880, 60)
+    beep(680, 60, 70)
+    beep(480, 110, 140)
+  },
   connect: () => beep(620, 100),
 }
