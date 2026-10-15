@@ -4,6 +4,7 @@ import './App.css'
 import * as api from './api'
 import type { AuthUser } from './api'
 import { AuthScreen } from './AuthScreen'
+import { ResetPasswordScreen } from './ResetPasswordScreen'
 import { SplashScreen } from './SplashScreen'
 import { useConfirm } from './ConfirmDialog'
 import { VoiceStage } from './VoiceStage'
@@ -89,6 +90,7 @@ function App() {
   const [showRoles, setShowRoles] = useState(false)
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null)
   const [showShareScreen, setShowShareScreen] = useState(false)
+  const [resetToken, setResetToken] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const localVoiceUser: PresenceUser | null = useMemo(
@@ -117,6 +119,13 @@ function App() {
     if (invite) {
       setPendingInviteCode(invite)
       params.delete('invite')
+    }
+    const token = params.get('reset_token')
+    if (token) {
+      setResetToken(token)
+      params.delete('reset_token')
+    }
+    if (invite || token) {
       const rest = params.toString()
       window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : ''))
     }
@@ -726,6 +735,10 @@ function App() {
 
   if (checkingSession) {
     return <div className="login-screen" />
+  }
+
+  if (!user && resetToken) {
+    return <ResetPasswordScreen token={resetToken} onDone={() => setResetToken(null)} />
   }
 
   if (!user) {

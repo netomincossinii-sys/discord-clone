@@ -52,10 +52,37 @@ function ToggleRow({
 
 function AccountSection({ userId, onEditProfile }: { userId: string; onEditProfile: () => void }) {
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [email, setEmail] = useState<string | null>(null)
+  const [editingEmail, setEditingEmail] = useState(false)
+  const [emailDraft, setEmailDraft] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [savingEmail, setSavingEmail] = useState(false)
 
   useEffect(() => {
     api.getProfile(userId).then(setProfile)
+    api.me().then((u) => setEmail(u.email ?? null))
   }, [userId])
+
+  async function saveEmail() {
+    setSavingEmail(true)
+    setEmailError(null)
+    try {
+      const updated = await api.setAccountEmail(emailDraft.trim())
+      setEmail(updated.email ?? null)
+      setEditingEmail(false)
+    } catch (err) {
+      const code = err instanceof Error ? err.message : 'unknown'
+      setEmailError(
+        code === 'invalid_email'
+          ? 'Digite um e-mail válido.'
+          : code === 'email_taken'
+            ? 'Esse e-mail já está em uso por outra conta.'
+            : 'Não foi possível salvar o e-mail.',
+      )
+    } finally {
+      setSavingEmail(false)
+    }
+  }
 
   if (!profile) return <div className="profile-loading">Carregando...</div>
 
@@ -87,6 +114,49 @@ function AccountSection({ userId, onEditProfile }: { userId: string; onEditProfi
           <p className="account-username">{profile.username}</p>
           {profile.bio && <p className="account-bio">{profile.bio}</p>}
         </div>
+      </div>
+
+      <div className="settings-toggle-row" style={{ marginTop: 16 }}>
+        <div style={{ flex: 1 }}>
+          <p className="settings-toggle-label">E-mail</p>
+          {editingEmail ? (
+            <>
+              <input
+                className="edit-input"
+                style={{ marginTop: 6 }}
+                autoFocus
+                type="email"
+                value={emailDraft}
+                onChange={(e) => setEmailDraft(e.target.value)}
+                placeholder="seu@email.com"
+              />
+              {emailError && <p className="auth-error">{emailError}</p>}
+              <div className="edit-actions" style={{ marginTop: 8 }}>
+                <button className="edit-cancel-btn" onClick={() => setEditingEmail(false)}>
+                  Cancelar
+                </button>
+                <button className="edit-save-btn" onClick={saveEmail} disabled={savingEmail || !emailDraft.trim()}>
+                  {savingEmail ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="settings-toggle-desc">
+              {email ? `${email}.` : 'Nenhum e-mail cadastrado.'} Usado pra recuperar sua senha caso você a esqueça.
+            </p>
+          )}
+        </div>
+        {!editingEmail && (
+          <button
+            className="account-edit-btn"
+            onClick={() => {
+              setEmailDraft(email ?? '')
+              setEditingEmail(true)
+            }}
+          >
+            {email ? 'Alterar' : 'Adicionar'}
+          </button>
+        )}
       </div>
     </div>
   )

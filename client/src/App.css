@@ -1420,6 +1420,33 @@ body {
   background: none;
 }
 
+.auth-hint {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: -4px 0 16px;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.login-card button.auth-forgot-link {
+  width: auto;
+  background: none;
+  padding: 0;
+  border: none;
+  color: var(--color-text-muted);
+  font-weight: normal;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: right;
+  display: block;
+  margin: -8px 0 12px;
+}
+
+.auth-forgot-link:hover {
+  color: var(--color-accent);
+  background: none;
+}
+
 .voice-stage {
   display: flex;
   flex-direction: column;

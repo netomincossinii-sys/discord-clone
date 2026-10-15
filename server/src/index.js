@@ -20,10 +20,18 @@ import { registerDmHandlers } from "./dmSocket.js";
 import { addSocket, removeSocket, isOnline, emitToUser } from "./presence.js";
 
 const PORT = process.env.PORT || 4001;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const CLIENT_ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function corsOriginCheck(origin, callback) {
+  if (!origin || CLIENT_ORIGINS.includes(origin)) return callback(null, true);
+  callback(new Error("not_allowed_by_cors"));
+}
 
 const app = express();
-app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+app.use(cors({ origin: corsOriginCheck, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -54,7 +62,7 @@ app.get("/api/state", requireAuth, async (req, res) => {
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: CLIENT_ORIGIN, credentials: true },
+  cors: { origin: corsOriginCheck, credentials: true },
   maxHttpBufferSize: 12 * 1024 * 1024,
 });
 

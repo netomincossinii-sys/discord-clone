@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string
   username: string
   color: string
+  email?: string | null
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -23,10 +24,10 @@ export function fetchTurnCredentials() {
   return request<{ iceServers: RTCIceServer[] }>('/api/turn-credentials')
 }
 
-export function register(username: string, password: string) {
+export function register(username: string, password: string, email: string) {
   return request<AuthUser>('/api/register', {
     method: 'POST',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, email }),
   })
 }
 
@@ -43,6 +44,27 @@ export function logout() {
 
 export function me() {
   return request<AuthUser>('/api/me')
+}
+
+export function setAccountEmail(email: string) {
+  return request<AuthUser>('/api/me/email', {
+    method: 'PATCH',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export function requestPasswordReset(email: string) {
+  return request<{ ok: true }>('/api/password-reset/request', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export function confirmPasswordReset(token: string, newPassword: string) {
+  return request<{ ok: true }>('/api/password-reset/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  })
 }
 
 export function getState() {
