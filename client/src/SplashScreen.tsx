@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-const SAFETY_TIMEOUT_MS = 3800
+const GIF_DURATION_MS = 2730 // one loop of /splash.gif (91 frames @ 30ms)
 
 export function SplashScreen({ onDone }: { onDone: () => void }) {
   const doneRef = useRef(false)
@@ -14,14 +14,14 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
   }
 
   useEffect(() => {
-    const timeout = window.setTimeout(finish, SAFETY_TIMEOUT_MS)
+    const timeout = window.setTimeout(finish, GIF_DURATION_MS)
     return () => window.clearTimeout(timeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
     <div className={`splash-screen ${fading ? 'fading' : ''}`}>
-      <video className="splash-video" src="/splash.mp4" autoPlay muted playsInline onEnded={finish} />
+      <img className="splash-media" src="/splash.gif" alt="" />
     </div>
   )
 }
