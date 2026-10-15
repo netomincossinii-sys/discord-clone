@@ -10,6 +10,15 @@ const JOIN_ERROR_MESSAGES: Record<string, string> = {
   invite_expired: 'Esse convite expirou. Peça um novo link para quem te convidou.',
 }
 
+function extractInviteCode(raw: string): string {
+  const trimmed = raw.trim()
+  const paramMatch = trimmed.match(/invite=([A-Za-z0-9_-]{6,})/)
+  if (paramMatch) return paramMatch[1]
+  if (/^[A-Za-z0-9_-]{6,}$/.test(trimmed)) return trimmed
+  const anyMatch = trimmed.match(/[A-Za-z0-9_-]{6,}/)
+  return anyMatch ? anyMatch[0] : trimmed
+}
+
 export function AddServerModal({
   username,
   initialInviteCode,
@@ -41,7 +50,7 @@ export function AddServerModal({
     setJoining(true)
     setJoinError('')
     try {
-      await onJoin(inviteCode.trim())
+      await onJoin(extractInviteCode(inviteCode))
     } catch (err) {
       const code = err instanceof Error ? err.message : 'unknown'
       setJoinError(JOIN_ERROR_MESSAGES[code] ?? 'Não foi possível entrar nesse servidor.')

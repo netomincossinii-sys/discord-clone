@@ -12,6 +12,15 @@ function isValidImage(value, maxLength) {
   return typeof value === "string" && value.startsWith("data:image/") && value.length <= maxLength;
 }
 
+function extractInviteCode(raw) {
+  const trimmed = raw.trim();
+  const paramMatch = trimmed.match(/invite=([A-Za-z0-9_-]{6,})/);
+  if (paramMatch) return paramMatch[1];
+  if (/^[A-Za-z0-9_-]{6,}$/.test(trimmed)) return trimmed;
+  const anyMatch = trimmed.match(/[A-Za-z0-9_-]{6,}/);
+  return anyMatch ? anyMatch[0] : trimmed;
+}
+
 function serializeInvite(server) {
   if (!server.inviteCode || !server.inviteCodeCreatedAt) return null;
   return {
@@ -71,8 +80,7 @@ export function serversRouter(io) {
       return res.status(400).json({ error: "invalid_code" });
     }
 
-    const match = code.trim().match(/[A-Za-z0-9_-]{6,}$/);
-    const cleanCode = match ? match[0] : code.trim();
+    const cleanCode = extractInviteCode(code);
 
     const server = await prisma.server.findUnique({
       where: { inviteCode: cleanCode },
