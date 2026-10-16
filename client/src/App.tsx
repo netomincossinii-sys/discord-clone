@@ -90,6 +90,7 @@ function App() {
   const [showRoles, setShowRoles] = useState(false)
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null)
   const [showShareScreen, setShowShareScreen] = useState(false)
+  const [screenVolumes, setScreenVolumes] = useState<Record<string, number>>({})
   const [resetToken, setResetToken] = useState<string | null>(null)
   const [authError, setAuthError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -619,6 +620,10 @@ function App() {
     voice.startScreenShare(options)
   }
 
+  function handleScreenVolumeChange(key: string, volume: number) {
+    setScreenVolumes((prev) => ({ ...prev, [key]: volume }))
+  }
+
   function sendDmMessage(attachment: Attachment | null) {
     if (!socket || !activeDmConversationId) return
     if (!dmDraft.trim() && !attachment) return
@@ -938,6 +943,8 @@ function App() {
             onSelectCameraDevice={voice.selectCameraDevice}
             onOpenSettings={() => openSettings()}
             onLeave={voice.leave}
+            screenVolumes={screenVolumes}
+            onScreenVolumeChange={handleScreenVolumeChange}
           />
         </div>
       ) : railMode === 'dms' ? (
@@ -977,6 +984,8 @@ function App() {
           onSelectCameraDevice={voice.selectCameraDevice}
           onOpenSettings={() => openSettings()}
           onLeave={voice.leave}
+          screenVolumes={screenVolumes}
+          onScreenVolumeChange={handleScreenVolumeChange}
         />
       ) : railMode === 'servers' && activeChannel?.type === 'VOICE' ? (
         <main className="voice-join-prompt">
@@ -1081,6 +1090,7 @@ function App() {
             participants={voice.participants}
             deafened={voice.deafened}
             speakerDeviceId={voice.speakerDeviceId}
+            screenVolumes={screenVolumes}
           />
         </>
       )}

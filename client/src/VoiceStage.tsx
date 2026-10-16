@@ -14,6 +14,7 @@ import {
   ChevronDownIcon,
   MaximizeIcon,
   MinimizeIcon,
+  Volume2Icon,
 } from './Icon'
 
 function bannerStyle(color: string): React.CSSProperties {
@@ -113,25 +114,65 @@ function RemoteTile({
   )
 }
 
+function ScreenVolumeMenu({ volume, onChange, onClose }: { volume: number; onChange: (v: number) => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [onClose])
+
+  return (
+    <div ref={ref} className="screen-volume-menu" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+      <div className="voice-device-menu-label">
+        <Volume2Icon size={14} /> Volume — {volume}%
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={volume}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="settings-slider"
+      />
+    </div>
+  )
+}
+
 function ScreenTile({
   label,
   stream,
   focused,
   onToggleFocus,
+  volume,
+  onVolumeChange,
 }: {
   label: string
   stream: MediaStream
   focused: boolean
   onToggleFocus: () => void
+  volume?: number
+  onVolumeChange?: (v: number) => void
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const [showVolumeMenu, setShowVolumeMenu] = useState(false)
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.srcObject = stream
   }, [stream])
 
   return (
-    <div className={`voice-tile screen-tile ${focused ? 'focused' : ''}`}>
+    <div
+      className={`voice-tile screen-tile ${focused ? 'focused' : ''}`}
+      onContextMenu={(e) => {
+        if (!onVolumeChange) return
+        e.preventDefault()
+        setShowVolumeMenu(true)
+      }}
+    >
       {/* audio (if the shared stream has any) is played by the always-mounted VoiceAudioSink, not here */}
       <video ref={videoRef} autoPlay playsInline muted className="visible" onDoubleClick={onToggleFocus} />
       <div className="live-badge">
@@ -147,6 +188,9 @@ function ScreenTile({
       <div className="voice-tile-label">
         <ScreenShareIcon size={13} /> {label}
       </div>
+      {showVolumeMenu && onVolumeChange && (
+        <ScreenVolumeMenu volume={volume ?? 100} onChange={onVolumeChange} onClose={() => setShowVolumeMenu(false)} />
+      )}
     </div>
   )
 }
@@ -173,6 +217,8 @@ export function VoiceStage({
   onSelectCameraDevice,
   onOpenSettings,
   onLeave,
+  screenVolumes,
+  onScreenVolumeChange,
 }: {
   channelName: string
   localUser: PresenceUser
@@ -195,16 +241,18 @@ export function VoiceStage({
   onSelectCameraDevice: (deviceId: string) => void
   onOpenSettings: () => void
   onLeave: () => void
+  screenVolumes: Record<string, number>
+  onScreenVolumeChange: (key: string, volume: number) => void
 }) {
   const [showMicMenu, setShowMicMenu] = useState(false)
   const [showCamMenu, setShowCamMenu] = useState(false)
   const [focusedKey, setFocusedKey] = useState<string | null>(null)
 
-  const screenTiles: { key: string; label: string; stream: MediaStream }[] = []
-  if (screenStream) screenTiles.push({ key: 'local-screen', label: 'Sua tela', stream: screenStream })
+  const screenTiles: { key: string; label: string; stream: MediaStream; isLocal: boolean }[] = []
+  if (screenStream) screenTiles.push({ key: 'local-screen', label: 'Sua tela', stream: screenStream, isLocal: true })
   participants.forEach((p, peerId) => {
     if (p.screenStream) {
-      screenTiles.push({ key: `${peerId}-screen`, label: p.user.username, stream: p.screenStream })
+      screenTiles.push({ key: `${peerId}-screen`, label: p.user.username, stream: p.screenStream, isLocal: false })
     }
   })
   const screenKeysSignature = screenTiles.map((t) => t.key).join(',')
@@ -251,6 +299,8 @@ export function VoiceStage({
               stream={focusedTile.stream}
               focused
               onToggleFocus={() => toggleFocus(focusedTile.key)}
+              volume={screenVolumes[focusedTile.key]}
+              onVolumeChange={focusedTile.isLocal ? undefined : (v) => onScreenVolumeChange(focusedTile.key, v)}
             />
           </div>
           <div className="voice-thumbnail-row">
@@ -264,6 +314,8 @@ export function VoiceStage({
                   stream={t.stream}
                   focused={false}
                   onToggleFocus={() => toggleFocus(t.key)}
+                  volume={screenVolumes[t.key]}
+                  onVolumeChange={t.isLocal ? undefined : (v) => onScreenVolumeChange(t.key, v)}
                 />
               ))}
           </div>
@@ -278,6 +330,8 @@ export function VoiceStage({
               stream={t.stream}
               focused={false}
               onToggleFocus={() => toggleFocus(t.key)}
+              volume={screenVolumes[t.key]}
+              onVolumeChange={t.isLocal ? undefined : (v) => onScreenVolumeChange(t.key, v)}
             />
           ))}
         </div>

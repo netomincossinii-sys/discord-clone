@@ -8,17 +8,26 @@ function PeerAudio({
   stream,
   deafened,
   speakerDeviceId,
+  volume = 100,
 }: {
   peerKey: string
   stream?: MediaStream
   deafened: boolean
   speakerDeviceId: string | null
+  volume?: number
 }) {
   const ref = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
-    if (ref.current && stream) ref.current.srcObject = stream
+    if (ref.current && stream) {
+      ref.current.srcObject = stream
+      ref.current.play().catch(() => {})
+    }
   }, [stream])
+
+  useEffect(() => {
+    if (ref.current) ref.current.volume = Math.min(100, Math.max(0, volume)) / 100
+  }, [volume])
 
   useEffect(() => {
     const el = ref.current as MediaElementWithSink | null
@@ -33,10 +42,12 @@ export function VoiceAudioSink({
   participants,
   deafened,
   speakerDeviceId,
+  screenVolumes,
 }: {
   participants: Map<string, { user: PresenceUser; stream?: MediaStream; screenStream?: MediaStream }>
   deafened: boolean
   speakerDeviceId: string | null
+  screenVolumes?: Record<string, number>
 }) {
   return (
     <>
@@ -52,6 +63,7 @@ export function VoiceAudioSink({
             stream={p.screenStream}
             deafened={deafened}
             speakerDeviceId={speakerDeviceId}
+            volume={screenVolumes?.[`${peerId}-screen`]}
           />
         ))}
     </>
