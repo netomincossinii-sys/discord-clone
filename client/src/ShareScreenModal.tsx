@@ -4,6 +4,8 @@ import { MonitorIcon, AppWindowIcon, BrowserTabIcon, XIcon } from './Icon'
 
 export type DisplaySurface = 'monitor' | 'window' | 'browser'
 
+const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform)
+
 const OPTIONS: { key: DisplaySurface; label: string; desc: string; icon: ReactNode }[] = [
   { key: 'monitor', label: 'Tela inteira', desc: 'Compartilhe tudo que está na sua tela', icon: <MonitorIcon size={22} /> },
   { key: 'window', label: 'Uma janela', desc: 'Compartilhe apenas um programa aberto', icon: <AppWindowIcon size={22} /> },
@@ -56,6 +58,12 @@ export function ShareScreenModal({
             <span className="settings-switch-knob" />
           </button>
         </div>
+        {audio && isMac && surface !== 'browser' && (
+          <p className="edit-hint" style={{ marginTop: -8 }}>
+            No Mac, "Tela inteira" e "Uma janela" não conseguem compartilhar o som do sistema (limitação do
+            navegador). Pra compartilhar áudio, escolha "Uma aba do navegador".
+          </p>
+        )}
         <div className="add-server-actions">
           <button className="add-server-back-btn" onClick={onClose}>
             Cancelar

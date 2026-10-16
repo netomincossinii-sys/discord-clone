@@ -433,6 +433,13 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       setScreenStream(display)
       setIsSharingScreen(true)
       SFX.screenShareStart()
+      if (options?.audio !== false && display.getAudioTracks().length === 0) {
+        setError(
+          options?.displaySurface === 'browser'
+            ? 'O navegador não compartilhou o áudio dessa aba. Tente marcar a opção de áudio ao escolher a aba.'
+            : 'Essa opção não inclui o áudio do sistema no seu computador. Pra compartilhar o som, escolha "Uma aba do navegador" da próxima vez.',
+        )
+      }
     } catch {
       // usuário cancelou o seletor de tela; não é um erro a exibir
     }
