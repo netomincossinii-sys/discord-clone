@@ -220,6 +220,9 @@ export function VoiceStage({
 
   const focusedTile = screenTiles.find((t) => t.key === focusedKey)
 
+  const totalGridTiles = 1 + participants.size + screenTiles.length
+  const gridCols = Math.max(1, Math.ceil(Math.sqrt(totalGridTiles)))
+
   const cameraTiles = (
     <>
       <LocalTile
@@ -266,7 +269,7 @@ export function VoiceStage({
           </div>
         </div>
       ) : (
-        <div className="voice-grid">
+        <div className="voice-grid" style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
           {cameraTiles}
           {screenTiles.map((t) => (
             <ScreenTile
