@@ -422,6 +422,12 @@ function VoiceSection({ voice }: { voice: ReturnType<typeof useVoice> }) {
       <div className="settings-divider" />
 
       <ToggleRow
+        label="Supressão de ruído por IA (RNNoise)"
+        description="Rede neural treinada pra limpar voz de ruído de fundo, teclado, ventilador. Roda no seu navegador, ninguém mais escuta o áudio cru."
+        enabled={voice.rnnoiseSuppression}
+        onToggle={voice.toggleRnnoiseSuppression}
+      />
+      <ToggleRow
         label="Supressão de ruído (nativa do navegador)"
         description="Reduz ruído de fundo, ventilador, teclado. Processado pelo próprio navegador."
         enabled={voice.noiseSuppression}
@@ -433,10 +439,7 @@ function VoiceSection({ voice }: { voice: ReturnType<typeof useVoice> }) {
         enabled={voice.echoCancellation}
         onToggle={voice.toggleEchoCancellation}
       />
-      <p className="edit-hint">
-        Supressão de ruído por IA (RNNoise) e usar o celular como câmera ainda não foram portados pra esse
-        protótipo.
-      </p>
+      <p className="edit-hint">Usar o celular como câmera ainda não foi portado pra esse protótipo.</p>
     </div>
   )
 }

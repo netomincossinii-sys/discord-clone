@@ -7,6 +7,7 @@ const KEYS = {
   micVolume: 'callfy_mic_volume',
   noiseSuppression: 'callfy_noise_suppression',
   echoCancellation: 'callfy_echo_cancellation',
+  rnnoise: 'callfy_rnnoise_suppression',
   sfxEnabled: 'callfy_sfx_enabled',
   desktopNotifications: 'callfy_desktop_notifications',
 }
@@ -61,6 +62,13 @@ export function getEchoCancellation(): boolean {
 }
 export function setEchoCancellation(v: boolean) {
   localStorage.setItem(KEYS.echoCancellation, v ? '1' : '0')
+}
+export function getRnnoiseSuppression(): boolean {
+  const v = localStorage.getItem(KEYS.rnnoise)
+  return v === null ? true : v === '1'
+}
+export function setRnnoiseSuppression(v: boolean) {
+  localStorage.setItem(KEYS.rnnoise, v ? '1' : '0')
 }
 export function isSfxEnabled(): boolean {
   const v = localStorage.getItem(KEYS.sfxEnabled)

@@ -4,6 +4,7 @@ import type { PresenceUser } from './types'
 import * as prefs from './voicePrefs'
 import { SFX } from './sfx'
 import { fetchTurnCredentials } from './api'
+import { createRnnoiseNode } from './noiseSuppressor'
 
 interface Participant {
   user: PresenceUser
@@ -39,6 +40,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
   const [micVolume, setMicVolumeState] = useState(prefs.getMicVolume())
   const [noiseSuppression, setNoiseSuppressionState] = useState(prefs.getNoiseSuppression())
   const [echoCancellation, setEchoCancellationState] = useState(prefs.getEchoCancellation())
+  const [rnnoiseSuppression, setRnnoiseSuppressionState] = useState(prefs.getRnnoiseSuppression())
   const [error, setError] = useState<string | null>(null)
 
   const pcs = useRef<Map<string, RTCPeerConnection>>(new Map())
@@ -50,6 +52,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
   const audioCtxRef = useRef<AudioContext | null>(null)
   const gainNodeRef = useRef<GainNode | null>(null)
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null)
+  const rnnoiseNodeRef = useRef<AudioWorkletNode | null>(null)
   const channelIdRef = useRef<string | null>(null)
   const participantsSnapshot = useRef(participants)
   useEffect(() => {
@@ -208,6 +211,9 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     rawMicStreamRef.current = null
     sourceNodeRef.current?.disconnect()
     sourceNodeRef.current = null
+    rnnoiseNodeRef.current?.disconnect()
+    rnnoiseNodeRef.current?.port.postMessage('destroy')
+    rnnoiseNodeRef.current = null
     gainNodeRef.current?.disconnect()
     gainNodeRef.current = null
     audioCtxRef.current?.close().catch(() => {})
@@ -228,6 +234,24 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     SFX.voiceLeave()
   }, [socket])
 
+  const connectMicChain = useCallback(async (source: AudioNode, ctx: AudioContext, gain: GainNode) => {
+    rnnoiseNodeRef.current?.disconnect()
+    rnnoiseNodeRef.current?.port.postMessage('destroy')
+    rnnoiseNodeRef.current = null
+    if (prefs.getRnnoiseSuppression()) {
+      try {
+        const node = await createRnnoiseNode(ctx)
+        source.connect(node)
+        node.connect(gain)
+        rnnoiseNodeRef.current = node
+        return
+      } catch {
+        // AudioWorklet indisponível ou falha ao carregar o WASM; segue sem a IA de ruído.
+      }
+    }
+    source.connect(gain)
+  }, [])
+
   const join = useCallback(async (newChannelId: string) => {
     if (channelIdRef.current === newChannelId) return
     if (channelIdRef.current) leave()
@@ -245,13 +269,13 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       const rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraint, video: false })
       rawMicStreamRef.current = rawStream
 
-      const audioCtx = new AudioContext()
+      const audioCtx = new AudioContext({ sampleRate: 48000 })
       const source = audioCtx.createMediaStreamSource(rawStream)
       const gainNode = audioCtx.createGain()
       const shouldBeMuted = deafened || !micOn
       gainNode.gain.value = shouldBeMuted ? 0 : prefs.getMicVolume() / 100
       const dest = audioCtx.createMediaStreamDestination()
-      source.connect(gainNode)
+      await connectMicChain(source, audioCtx, gainNode)
       gainNode.connect(dest)
       audioCtxRef.current = audioCtx
       gainNodeRef.current = gainNode
@@ -267,7 +291,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     } catch {
       setError('Não foi possível acessar o microfone. Verifique as permissões do navegador.')
     }
-  }, [socket, leave, micDeviceId, micOn, deafened])
+  }, [socket, leave, micDeviceId, micOn, deafened, connectMicChain])
 
   const toggleMic = useCallback(() => {
     setMicOn((prevMicOn) => {
@@ -313,14 +337,14 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       const newRaw = await navigator.mediaDevices.getUserMedia({ audio: constraint })
       const newSource = audioCtxRef.current.createMediaStreamSource(newRaw)
       sourceNodeRef.current?.disconnect()
-      newSource.connect(gainNodeRef.current)
+      await connectMicChain(newSource, audioCtxRef.current, gainNodeRef.current)
       sourceNodeRef.current = newSource
       rawMicStreamRef.current?.getTracks().forEach((t) => t.stop())
       rawMicStreamRef.current = newRaw
     } catch {
       setError('Não foi possível reconfigurar o microfone.')
     }
-  }, [])
+  }, [connectMicChain])
 
   const selectMicDevice = useCallback(async (deviceId: string) => {
     prefs.setMicDeviceId(deviceId)
@@ -364,6 +388,16 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
       })
     }
   }, [swapMicSource])
+
+  const toggleRnnoiseSuppression = useCallback(async () => {
+    const next = !prefs.getRnnoiseSuppression()
+    prefs.setRnnoiseSuppression(next)
+    setRnnoiseSuppressionState(next)
+    if (channelIdRef.current && sourceNodeRef.current && audioCtxRef.current && gainNodeRef.current) {
+      sourceNodeRef.current.disconnect()
+      await connectMicChain(sourceNodeRef.current, audioCtxRef.current, gainNodeRef.current)
+    }
+  }, [connectMicChain])
 
   const toggleCam = useCallback(async () => {
     if (!localStreamRef.current) return
@@ -593,6 +627,7 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     micVolume,
     noiseSuppression,
     echoCancellation,
+    rnnoiseSuppression,
     error,
     join,
     leave,
@@ -608,5 +643,6 @@ export function useVoice(socket: Socket | null, localUser: PresenceUser | null) 
     setMicVolume,
     toggleNoiseSuppression,
     toggleEchoCancellation,
+    toggleRnnoiseSuppression,
   }
 }
