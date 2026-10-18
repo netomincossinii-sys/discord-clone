@@ -556,3 +556,30 @@ export function EyeOffIcon(props: IconProps) {
     </Base>
   )
 }
+
+export function UserIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M20 21a8 8 0 0 0-16 0" />
+      <circle cx="12" cy="8" r="4" />
+    </Base>
+  )
+}
+
+export function AtSignIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-5.5 8.3" />
+    </Base>
+  )
+}
+
+export function StickyNoteIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M4 4h12l4 4v12H4Z" />
+      <path d="M16 4v4h4" />
+    </Base>
+  )
+}

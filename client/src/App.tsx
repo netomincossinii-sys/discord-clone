@@ -32,6 +32,7 @@ import { CreateChannelModal } from './CreateChannelModal'
 import { CreateCategoryModal } from './CreateCategoryModal'
 import { ChannelSettingsModal } from './ChannelSettingsModal'
 import { RolesModal } from './RolesModal'
+import { UserContextMenu } from './UserContextMenu'
 import { SFX } from './sfx'
 import { UsersIcon, MessageCircleIcon, PlusIcon, MicIcon, MicOffIcon, HeadphonesIcon, HeadphonesOffIcon, ChevronDownIcon, SettingsIcon, GearIcon, LockIcon, ScreenShareIcon, HelpCircleIcon } from './Icon'
 import { isDesktopNotificationsEnabled } from './voicePrefs'
@@ -91,6 +92,15 @@ function App() {
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null)
   const [showShareScreen, setShowShareScreen] = useState(false)
   const [screenVolumes, setScreenVolumes] = useState<Record<string, number>>({})
+  const [userVolumes, setUserVolumes] = useState<Record<string, number>>({})
+  const [mutedUserIds, setMutedUserIds] = useState<Set<string>>(new Set())
+  const [userContextMenu, setUserContextMenu] = useState<{
+    x: number
+    y: number
+    userId: string
+    username: string
+    peerId: string | null
+  } | null>(null)
   const [resetToken, setResetToken] = useState<string | null>(null)
   const [authError, setAuthError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -378,7 +388,18 @@ function App() {
         </div>
         {isVoice &&
           (voice.channelPresence.get(channel.id) ?? []).map((member) => (
-            <div key={member.id} className="voice-channel-member">
+            <div
+              key={member.id}
+              className="voice-channel-member"
+              onContextMenu={(e) =>
+                openUserContextMenu(
+                  e,
+                  member.id,
+                  member.username,
+                  voice.channelId === channel.id ? resolveVoicePeerId(member.id) : null,
+                )
+              }
+            >
               {member.avatarImage ? (
                 <img className="voice-channel-member-avatar-img" src={member.avatarImage} alt="" />
               ) : (
@@ -412,6 +433,14 @@ function App() {
       </div>
     )
   }
+
+  useEffect(() => {
+    function blockNativeContextMenu(e: MouseEvent) {
+      e.preventDefault()
+    }
+    document.addEventListener('contextmenu', blockNativeContextMenu)
+    return () => document.removeEventListener('contextmenu', blockNativeContextMenu)
+  }, [])
 
   useEffect(() => {
     if (socket && activeChannel?.type === 'TEXT') {
@@ -584,6 +613,51 @@ function App() {
       const { messages } = await api.getDmMessages(result.id)
       setDmMessagesByConversation((prev) => ({ ...prev, [result.id]: messages }))
     }
+    return result.id
+  }
+
+  async function startCallWithUser(userId: string) {
+    const conversationId = await openDm(userId)
+    if (!socket) return
+    socket.emit('dm:call_invite', { conversationId })
+    setOutgoingCallConversationId(conversationId)
+  }
+
+  function mentionUser(username: string) {
+    if (railMode === 'dms') {
+      setDmDraft((prev) => (prev ? `${prev.trimEnd()} @${username} ` : `@${username} `))
+      return
+    }
+    setRailMode('servers')
+    const textChannel = activeChannel?.type === 'TEXT' ? activeChannel : activeServer?.channels.find((c) => c.type === 'TEXT')
+    if (textChannel) setActiveChannelId(textChannel.id)
+    setDraft((prev) => (prev ? `${prev.trimEnd()} @${username} ` : `@${username} `))
+  }
+
+  function resolveVoicePeerId(targetUserId: string): string | null {
+    for (const [peerId, p] of voice.participants.entries()) {
+      if (p.user.id === targetUserId) return peerId
+    }
+    return null
+  }
+
+  function openUserContextMenu(e: React.MouseEvent, userId: string, username: string, peerId: string | null) {
+    e.preventDefault()
+    e.stopPropagation()
+    setUserContextMenu({ x: e.clientX, y: e.clientY, userId, username, peerId })
+  }
+
+  function handleUserVolumeChange(peerId: string, volume: number) {
+    setUserVolumes((prev) => ({ ...prev, [peerId]: volume }))
+  }
+
+  function handleToggleUserMute(peerId: string) {
+    setMutedUserIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(peerId)) next.delete(peerId)
+      else next.add(peerId)
+      return next
+    })
   }
 
   async function selectDmConversation(conversationId: string) {
@@ -945,6 +1019,7 @@ function App() {
             onLeave={voice.leave}
             screenVolumes={screenVolumes}
             onScreenVolumeChange={handleScreenVolumeChange}
+            onUserContextMenu={openUserContextMenu}
           />
         </div>
       ) : railMode === 'dms' ? (
@@ -986,6 +1061,7 @@ function App() {
           onLeave={voice.leave}
           screenVolumes={screenVolumes}
           onScreenVolumeChange={handleScreenVolumeChange}
+          onUserContextMenu={openUserContextMenu}
         />
       ) : railMode === 'servers' && activeChannel?.type === 'VOICE' ? (
         <main className="voice-join-prompt">
@@ -1091,6 +1167,8 @@ function App() {
             deafened={voice.deafened}
             speakerDeviceId={voice.speakerDeviceId}
             screenVolumes={screenVolumes}
+            userVolumes={userVolumes}
+            mutedUserIds={mutedUserIds}
           />
         </>
       )}
@@ -1177,6 +1255,25 @@ function App() {
           Chamando {dmConversations.find((c) => c.id === outgoingCallConversationId)?.user.username}...
           <button onClick={cancelOutgoingCall}>Cancelar</button>
         </div>
+      )}
+
+      {userContextMenu && (
+        <UserContextMenu
+          x={userContextMenu.x}
+          y={userContextMenu.y}
+          userId={userContextMenu.userId}
+          isSelf={userContextMenu.userId === user.id}
+          canControlAudio={!!userContextMenu.peerId && userContextMenu.userId !== user.id}
+          volume={userContextMenu.peerId ? userVolumes[userContextMenu.peerId] ?? 100 : 100}
+          muted={userContextMenu.peerId ? mutedUserIds.has(userContextMenu.peerId) : false}
+          onClose={() => setUserContextMenu(null)}
+          onProfile={() => setProfileViewUserId(userContextMenu.userId)}
+          onMention={() => mentionUser(userContextMenu.username)}
+          onMessage={() => openDm(userContextMenu.userId)}
+          onStartCall={() => startCallWithUser(userContextMenu.userId)}
+          onVolumeChange={(v) => userContextMenu.peerId && handleUserVolumeChange(userContextMenu.peerId, v)}
+          onToggleMute={() => userContextMenu.peerId && handleToggleUserMute(userContextMenu.peerId)}
+        />
       )}
 
       {profileViewUserId && (

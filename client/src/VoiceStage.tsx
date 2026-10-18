@@ -34,6 +34,7 @@ function LocalTile({
   micOn,
   deafened,
   speaking,
+  onContextMenu,
 }: {
   localUser: PresenceUser
   localStream: MediaStream | null
@@ -41,6 +42,7 @@ function LocalTile({
   micOn: boolean
   deafened: boolean
   speaking: boolean
+  onContextMenu: (e: React.MouseEvent, userId: string, username: string, peerId: string | null) => void
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -51,7 +53,11 @@ function LocalTile({
   }, [localStream])
 
   return (
-    <div className={`voice-tile ${speaking ? 'speaking' : ''}`} style={camOn ? undefined : bannerStyle(localUser.color)}>
+    <div
+      className={`voice-tile ${speaking ? 'speaking' : ''}`}
+      style={camOn ? undefined : bannerStyle(localUser.color)}
+      onContextMenu={(e) => onContextMenu(e, localUser.id, localUser.username, null)}
+    >
       <video ref={videoRef} autoPlay playsInline muted className={camOn ? 'visible' : 'hidden'} />
       {!camOn &&
         (localUser.avatarImage ? (
@@ -74,11 +80,13 @@ function RemoteTile({
   user,
   stream,
   speaking,
+  onContextMenu,
 }: {
   peerId: string
   user: PresenceUser
   stream?: MediaStream
   speaking: boolean
+  onContextMenu: (e: React.MouseEvent, userId: string, username: string, peerId: string | null) => void
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -95,6 +103,7 @@ function RemoteTile({
       className={`voice-tile ${speaking ? 'speaking' : ''}`}
       style={hasVideo ? undefined : bannerStyle(user.color)}
       key={peerId}
+      onContextMenu={(e) => onContextMenu(e, user.id, user.username, peerId)}
     >
       {/* audio for this peer is played by the always-mounted VoiceAudioSink, not here, so it keeps playing while this tile is unmounted */}
       <video ref={videoRef} autoPlay playsInline muted className={hasVideo ? 'visible' : 'hidden'} />
@@ -219,6 +228,7 @@ export function VoiceStage({
   onLeave,
   screenVolumes,
   onScreenVolumeChange,
+  onUserContextMenu,
 }: {
   channelName: string
   localUser: PresenceUser
@@ -243,6 +253,7 @@ export function VoiceStage({
   onLeave: () => void
   screenVolumes: Record<string, number>
   onScreenVolumeChange: (key: string, volume: number) => void
+  onUserContextMenu: (e: React.MouseEvent, userId: string, username: string, peerId: string | null) => void
 }) {
   const [showMicMenu, setShowMicMenu] = useState(false)
   const [showCamMenu, setShowCamMenu] = useState(false)
@@ -280,9 +291,17 @@ export function VoiceStage({
         micOn={micOn}
         deafened={deafened}
         speaking={speakingPeers.has('local')}
+        onContextMenu={onUserContextMenu}
       />
       {Array.from(participants.entries()).map(([peerId, p]) => (
-        <RemoteTile key={peerId} peerId={peerId} user={p.user} stream={p.stream} speaking={speakingPeers.has(peerId)} />
+        <RemoteTile
+          key={peerId}
+          peerId={peerId}
+          user={p.user}
+          stream={p.stream}
+          speaking={speakingPeers.has(peerId)}
+          onContextMenu={onUserContextMenu}
+        />
       ))}
     </>
   )

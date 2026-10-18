@@ -63,7 +63,14 @@ export function UserHoverCard({
   }
 
   return (
-    <span ref={wrapRef} className={className} style={style} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+    <span
+      ref={wrapRef}
+      className={className}
+      style={style}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      onContextMenu={handleLeave}
+    >
       {children}
       {open &&
         profile &&

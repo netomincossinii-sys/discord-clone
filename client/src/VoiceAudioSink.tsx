@@ -43,16 +43,27 @@ export function VoiceAudioSink({
   deafened,
   speakerDeviceId,
   screenVolumes,
+  userVolumes,
+  mutedUserIds,
 }: {
   participants: Map<string, { user: PresenceUser; stream?: MediaStream; screenStream?: MediaStream }>
   deafened: boolean
   speakerDeviceId: string | null
   screenVolumes?: Record<string, number>
+  userVolumes?: Record<string, number>
+  mutedUserIds?: Set<string>
 }) {
   return (
     <>
       {Array.from(participants.entries()).map(([peerId, p]) => (
-        <PeerAudio key={peerId} peerKey={peerId} stream={p.stream} deafened={deafened} speakerDeviceId={speakerDeviceId} />
+        <PeerAudio
+          key={peerId}
+          peerKey={peerId}
+          stream={p.stream}
+          deafened={deafened}
+          speakerDeviceId={speakerDeviceId}
+          volume={mutedUserIds?.has(peerId) ? 0 : userVolumes?.[peerId]}
+        />
       ))}
       {Array.from(participants.entries())
         .filter(([, p]) => p.screenStream)
