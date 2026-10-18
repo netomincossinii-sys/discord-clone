@@ -119,6 +119,35 @@ body {
   margin-bottom: 12px;
 }
 
+.password-input-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.password-input-wrap input {
+  margin-bottom: 0;
+  padding-right: 40px;
+}
+
+.password-input-wrap .password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: auto;
+  background: none;
+  border: none;
+  padding: 4px;
+  display: flex;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.password-input-wrap .password-toggle-btn:hover {
+  background: none;
+  color: var(--color-text);
+}
+
 .login-card button {
   width: 100%;
   padding: 10px;

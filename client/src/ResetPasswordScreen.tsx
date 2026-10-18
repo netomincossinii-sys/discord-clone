@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import * as api from './api'
 import { LogoIcon } from './LogoIcon'
+import { PasswordInput } from './PasswordInput'
 
 export function ResetPasswordScreen({ token, onDone }: { token: string; onDone: () => void }) {
   const [password, setPassword] = useState('')
@@ -48,19 +49,11 @@ export function ResetPasswordScreen({ token, onDone }: { token: string; onDone: 
           <>
             <p>Escolha uma nova senha</p>
             <form onSubmit={submit}>
-              <input
-                autoFocus
-                type="password"
-                placeholder="Nova senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                maxLength={72}
-              />
-              <input
-                type="password"
-                placeholder="Confirme a nova senha"
+              <PasswordInput value={password} onChange={setPassword} placeholder="Nova senha" autoFocus maxLength={72} />
+              <PasswordInput
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={setConfirmPassword}
+                placeholder="Confirme a nova senha"
                 maxLength={72}
               />
               {error && <div className="auth-error">{error}</div>}

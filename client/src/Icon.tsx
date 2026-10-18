@@ -536,3 +536,23 @@ export function GoogleIcon({ size = 20, ...rest }: IconProps) {
     </svg>
   )
 }
+
+export function EyeIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </Base>
+  )
+}
+
+export function EyeOffIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M9.9 5.17A9.6 9.6 0 0 1 12 5c7 0 10.5 7 10.5 7a13.2 13.2 0 0 1-3.38 4.1" />
+      <path d="M6.6 6.6C3.4 8.6 1.5 12 1.5 12s3.5 7 10.5 7a9.7 9.7 0 0 0 4.9-1.3" />
+      <path d="M9.5 9.5a3 3 0 0 0 4.24 4.24" />
+      <line x1="2" y1="2" x2="22" y2="22" />
+    </Base>
+  )
+}

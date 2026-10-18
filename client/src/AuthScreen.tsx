@@ -3,6 +3,7 @@ import * as api from './api'
 import type { AuthUser } from './api'
 import { LogoIcon } from './LogoIcon'
 import { GoogleIcon } from './Icon'
+import { PasswordInput } from './PasswordInput'
 
 type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent'
 
@@ -138,13 +139,7 @@ export function AuthScreen({
               onChange={(e) => setEmail(e.target.value)}
             />
           )}
-          <input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            maxLength={72}
-          />
+          <PasswordInput value={password} onChange={setPassword} maxLength={72} />
           {mode === 'login' && (
             <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')}>
               Esqueceu a senha?
